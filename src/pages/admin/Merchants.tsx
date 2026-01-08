@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useMerchants, useCreateMerchant, useUpdateMerchant } from '@/hooks/useMerchants';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useApiKeys, useGenerateApiKey, useRevokeApiKey } from '@/hooks/useApiKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +19,12 @@ import {
   Edit,
   Pause,
   Play,
-  Loader2
+  Loader2,
+  Key,
+  Copy,
+  Check,
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,15 +40,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Merchants() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -52,8 +64,15 @@ export default function Merchants() {
 
   const { data: merchants, isLoading } = useMerchants();
   const { data: transactions } = useTransactions();
+  const { data: allApiKeys } = useApiKeys();
   const createMerchant = useCreateMerchant();
   const updateMerchant = useUpdateMerchant();
+  const generateApiKey = useGenerateApiKey();
+  const revokeApiKey = useRevokeApiKey();
+
+  const getApiKeyForMerchant = (merchantId: string) => {
+    return (allApiKeys || []).find(k => k.merchant_id === merchantId && k.is_active);
+  };
 
   const filteredMerchants = (merchants || []).filter(m => 
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -86,6 +105,26 @@ export default function Merchants() {
 
   const handleToggleStatus = (id: string, currentStatus: boolean) => {
     updateMerchant.mutate({ id, is_enabled: !currentStatus });
+  };
+
+  const handleGenerateKey = async (merchantId: string) => {
+    const result = await generateApiKey.mutateAsync(merchantId);
+    setGeneratedKey(result.api_key);
+  };
+
+  const handleCopyKey = () => {
+    if (generatedKey) {
+      navigator.clipboard.writeText(generatedKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: 'Copied!', description: 'API key copied to clipboard.' });
+    }
+  };
+
+  const handleCloseApiKeyDialog = () => {
+    setApiKeyDialog(null);
+    setGeneratedKey(null);
+    setCopied(false);
   };
 
   if (isLoading) {
@@ -197,6 +236,7 @@ export default function Merchants() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredMerchants.map((merchant, index) => {
             const stats = getMerchantStats(merchant.id);
+            const apiKey = getApiKeyForMerchant(merchant.id);
             
             return (
               <Card 
@@ -238,6 +278,13 @@ export default function Merchants() {
                         View Transactions
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => setApiKeyDialog({ open: true, merchantId: merchant.id, merchantName: merchant.name })}
+                      >
+                        <Key className="mr-2 h-4 w-4" />
+                        Manage API Key
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleToggleStatus(merchant.id, merchant.is_enabled)}>
                         {merchant.is_enabled ? (
                           <>
@@ -257,16 +304,24 @@ export default function Merchants() {
                 
                 <CardContent className="space-y-4">
                   {/* Status Badge */}
-                  <Badge 
-                    variant={merchant.is_enabled ? "default" : "secondary"}
-                    className={cn(
-                      merchant.is_enabled 
-                        ? "bg-status-confirmed/10 text-status-confirmed border-status-confirmed/30" 
-                        : "bg-muted text-muted-foreground"
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={merchant.is_enabled ? "default" : "secondary"}
+                      className={cn(
+                        merchant.is_enabled 
+                          ? "bg-status-confirmed/10 text-status-confirmed border-status-confirmed/30" 
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {merchant.is_enabled ? 'Active' : 'Suspended'}
+                    </Badge>
+                    {apiKey && (
+                      <Badge variant="outline" className="gap-1">
+                        <Key className="h-3 w-3" />
+                        {apiKey.key_prefix}...
+                      </Badge>
                     )}
-                  >
-                    {merchant.is_enabled ? 'Active' : 'Suspended'}
-                  </Badge>
+                  </div>
                   
                   {/* Details */}
                   <div className="space-y-2 text-sm">
@@ -284,6 +339,19 @@ export default function Merchants() {
                       <Percent className="h-4 w-4" />
                       <span>{merchant.fee_percentage}% platform fee</span>
                     </div>
+                  </div>
+                  
+                  {/* API Key Section */}
+                  <div className="pt-3 border-t border-border/50">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full gap-2"
+                      onClick={() => setApiKeyDialog({ open: true, merchantId: merchant.id, merchantName: merchant.name })}
+                    >
+                      <Key className="h-4 w-4" />
+                      {apiKey ? 'Manage API Key' : 'Generate API Key'}
+                    </Button>
                   </div>
                   
                   {/* Stats */}
@@ -304,6 +372,103 @@ export default function Merchants() {
             );
           })}
         </div>
+
+        {/* API Key Management Dialog */}
+        <Dialog open={apiKeyDialog?.open || false} onOpenChange={(open) => !open && handleCloseApiKeyDialog()}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                API Key Management
+              </DialogTitle>
+              <DialogDescription>
+                Manage API credentials for <span className="font-semibold">{apiKeyDialog?.merchantName}</span>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 mt-4">
+              {(() => {
+                const currentKey = apiKeyDialog ? getApiKeyForMerchant(apiKeyDialog.merchantId) : null;
+                
+                return (
+                  <>
+                    {/* Current Key Info */}
+                    {currentKey && !generatedKey && (
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Current API Key</span>
+                          <Badge variant="outline" className="text-xs">Active</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-sm font-mono bg-background px-3 py-2 rounded border">
+                            {currentKey.key_prefix}••••••••••••••••
+                          </code>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Created {new Date(currentKey.created_at).toLocaleDateString()}
+                          {currentKey.last_used_at && (
+                            <> • Last used {new Date(currentKey.last_used_at).toLocaleDateString()}</>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Generated Key Display */}
+                    {generatedKey && (
+                      <div className="p-4 rounded-lg bg-status-confirmed/10 border border-status-confirmed/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Check className="h-4 w-4 text-status-confirmed" />
+                          <span className="text-sm font-medium text-status-confirmed">New API Key Generated</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs font-mono bg-background px-3 py-2 rounded border break-all">
+                            {generatedKey}
+                          </code>
+                          <Button size="icon" variant="outline" onClick={handleCopyKey}>
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-status-confirmed mt-2 font-medium">
+                          ⚠️ Copy this key now! It will not be shown again.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {!generatedKey && (
+                      <div className="space-y-3">
+                        <Button 
+                          className="w-full gap-2"
+                          onClick={() => apiKeyDialog && handleGenerateKey(apiKeyDialog.merchantId)}
+                          disabled={generateApiKey.isPending}
+                        >
+                          {generateApiKey.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          {currentKey ? 'Regenerate API Key' : 'Generate API Key'}
+                        </Button>
+                        
+                        {currentKey && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            Generating a new key will invalidate the current one.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={handleCloseApiKeyDialog}>
+                {generatedKey ? 'Done' : 'Close'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {filteredMerchants.length === 0 && (
           <Card className="border-border/50">

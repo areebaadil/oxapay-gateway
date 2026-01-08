@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -22,27 +24,57 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/merchants" element={<Merchants />} />
-          <Route path="/admin/transactions" element={<AdminTransactions />} />
-          <Route path="/admin/settlements" element={<Settlements />} />
-          
-          {/* Merchant Routes */}
-          <Route path="/merchant" element={<MerchantDashboard />} />
-          <Route path="/merchant/transactions" element={<MerchantTransactions />} />
-          <Route path="/merchant/ledger" element={<MerchantLedger />} />
-          
-          {/* Hosted Deposit Page */}
-          <Route path="/deposit/:intentId" element={<DepositPage />} />
-          <Route path="/deposit" element={<DepositPage />} />
-          
-          {/* Catch-all */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/merchants" element={
+              <ProtectedRoute requiredRole="admin">
+                <Merchants />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/transactions" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminTransactions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settlements" element={
+              <ProtectedRoute requiredRole="admin">
+                <Settlements />
+              </ProtectedRoute>
+            } />
+            
+            {/* Merchant Routes */}
+            <Route path="/merchant" element={
+              <ProtectedRoute requiredRole="merchant">
+                <MerchantDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/merchant/transactions" element={
+              <ProtectedRoute requiredRole="merchant">
+                <MerchantTransactions />
+              </ProtectedRoute>
+            } />
+            <Route path="/merchant/ledger" element={
+              <ProtectedRoute requiredRole="merchant">
+                <MerchantLedger />
+              </ProtectedRoute>
+            } />
+            
+            {/* Hosted Deposit Page (public) */}
+            <Route path="/deposit/:intentId" element={<DepositPage />} />
+            <Route path="/deposit" element={<DepositPage />} />
+            
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

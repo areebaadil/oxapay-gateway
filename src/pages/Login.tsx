@@ -1,30 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, ArrowRight, Lock, Mail } from 'lucide-react';
+import { Shield, ArrowRight, Lock, Mail, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { signIn, user, role, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [merchantEmail, setMerchantEmail] = useState('');
+  const [merchantPassword, setMerchantPassword] = useState('');
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && role) {
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'merchant') {
+        navigate('/merchant');
+      }
+    }
+  }, [user, role, navigate]);
+
+  const handleLogin = async (e: React.FormEvent, type: 'admin' | 'merchant') => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      navigate('/admin');
-    }, 500);
+    
+    const email = type === 'admin' ? adminEmail : merchantEmail;
+    const password = type === 'admin' ? adminPassword : merchantPassword;
+    
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      toast({
+        title: 'Login failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Navigation will happen via useEffect when role is determined
+    setIsLoading(false);
   };
 
-  const handleMerchantLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      navigate('/merchant');
-    }, 500);
-  };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -116,7 +150,7 @@ export default function Login() {
             </TabsList>
             
             <TabsContent value="admin">
-              <form onSubmit={handleAdminLogin} className="space-y-6">
+              <form onSubmit={(e) => handleLogin(e, 'admin')} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="admin-email">Email</Label>
                   <div className="relative">
@@ -126,7 +160,9 @@ export default function Login() {
                       type="email"
                       placeholder="admin@cryptogate.io"
                       className="pl-10"
-                      defaultValue="admin@cryptogate.io"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
@@ -140,7 +176,9 @@ export default function Login() {
                       type="password"
                       placeholder="••••••••"
                       className="pl-10"
-                      defaultValue="password"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
@@ -151,7 +189,7 @@ export default function Login() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
                       Sign in as Admin
@@ -163,7 +201,7 @@ export default function Login() {
             </TabsContent>
             
             <TabsContent value="merchant">
-              <form onSubmit={handleMerchantLogin} className="space-y-6">
+              <form onSubmit={(e) => handleLogin(e, 'merchant')} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="merchant-email">Email</Label>
                   <div className="relative">
@@ -173,7 +211,9 @@ export default function Login() {
                       type="email"
                       placeholder="merchant@company.com"
                       className="pl-10"
-                      defaultValue="admin@gamefi.io"
+                      value={merchantEmail}
+                      onChange={(e) => setMerchantEmail(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
@@ -187,7 +227,9 @@ export default function Login() {
                       type="password"
                       placeholder="••••••••"
                       className="pl-10"
-                      defaultValue="password"
+                      value={merchantPassword}
+                      onChange={(e) => setMerchantPassword(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
@@ -198,7 +240,7 @@ export default function Login() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
                       Sign in as Merchant

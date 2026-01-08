@@ -245,52 +245,91 @@ serve(async (req) => {
 
       // Send webhook to merchant if configured
       if (merchant?.webhook_url) {
+        const webhookPayload = {
+          event: "payment.confirmed",
+          payment_id: orderId,
+          transaction_id: transaction.id,
+          status: "CONFIRMED",
+          coin: transaction.coin,
+          crypto_amount: cryptoAmount,
+          usd_value: usdValue,
+          tx_hash: txID,
+          user_reference: transaction.user_reference,
+          confirmed_at: new Date().toISOString(),
+        };
+
+        let responseStatus: number | null = null;
+        
         try {
-          const webhookPayload = {
-            event: "deposit.confirmed",
-            data: {
-              transaction_id: transaction.id,
-              deposit_intent_id: orderId,
-              coin: transaction.coin,
-              crypto_amount: cryptoAmount,
-              usd_value: usdValue,
-              tx_hash: txID,
-              user_reference: transaction.user_reference,
-              status: "CONFIRMED",
-              confirmed_at: new Date().toISOString(),
-            },
-          };
-
-          const webhookBody = JSON.stringify(webhookPayload);
-
           const webhookResponse = await fetch(merchant.webhook_url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "X-Webhook-Event": "payment.confirmed",
+              "X-Webhook-ID": transaction.id,
             },
-            body: webhookBody,
+            body: JSON.stringify(webhookPayload),
           });
 
-          // Log webhook attempt
-          await supabase.from("webhook_logs").insert({
-            merchant_id: transaction.merchant_id,
-            event_type: "deposit.confirmed",
-            payload: webhookPayload,
-            response_status: webhookResponse.status,
-          });
-
-          console.log(`Merchant webhook sent to ${merchant.webhook_url}, status: ${webhookResponse.status}`);
+          responseStatus = webhookResponse.status;
+          console.log(`Merchant webhook sent to ${merchant.webhook_url}, status: ${responseStatus}`);
         } catch (webhookError) {
           console.error("Error sending merchant webhook:", webhookError);
-          
-          // Log failed webhook
-          await supabase.from("webhook_logs").insert({
-            merchant_id: transaction.merchant_id,
-            event_type: "deposit.confirmed",
-            payload: { error: "Failed to send webhook" },
-            response_status: null,
-          });
         }
+
+        // Log webhook attempt (will be retried if failed)
+        await supabase.from("webhook_logs").insert({
+          merchant_id: transaction.merchant_id,
+          event_type: "payment.confirmed",
+          payload: webhookPayload,
+          response_status: responseStatus,
+          attempts: 1,
+        });
+      }
+    }
+
+    // Handle other status changes (failed, expired)
+    if (newStatus === "FAILED" || newStatus === "EXPIRED") {
+      const depositIntent = transaction.deposit_intents as { merchants?: { webhook_url?: string } } | null;
+      const merchant = depositIntent?.merchants;
+      
+      if (merchant?.webhook_url) {
+        const eventType = newStatus === "FAILED" ? "payment.failed" : "payment.expired";
+        const webhookPayload = {
+          event: eventType,
+          payment_id: orderId,
+          transaction_id: transaction.id,
+          status: newStatus,
+          coin: transaction.coin,
+          user_reference: transaction.user_reference,
+          timestamp: new Date().toISOString(),
+        };
+
+        let responseStatus: number | null = null;
+        
+        try {
+          const webhookResponse = await fetch(merchant.webhook_url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Webhook-Event": eventType,
+              "X-Webhook-ID": transaction.id,
+            },
+            body: JSON.stringify(webhookPayload),
+          });
+
+          responseStatus = webhookResponse.status;
+        } catch (webhookError) {
+          console.error("Error sending merchant webhook:", webhookError);
+        }
+
+        await supabase.from("webhook_logs").insert({
+          merchant_id: transaction.merchant_id,
+          event_type: eventType,
+          payload: webhookPayload,
+          response_status: responseStatus,
+          attempts: 1,
+        });
       }
     }
 

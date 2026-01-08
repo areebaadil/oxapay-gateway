@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CoinBadge } from '@/components/ui/CoinBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { CoinType } from '@/types';
-import { exchangeRates } from '@/lib/mock-data';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   Copy, 
@@ -13,9 +14,13 @@ import {
   QrCode,
   ArrowLeft,
   AlertCircle,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Database } from '@/integrations/supabase/types';
+
+type CoinType = Database['public']['Enums']['coin_type'];
 
 const SUPPORTED_COINS: { coin: CoinType; network: string }[] = [
   { coin: 'BTC', network: 'Bitcoin' },
@@ -26,38 +31,286 @@ const SUPPORTED_COINS: { coin: CoinType; network: string }[] = [
   { coin: 'TRX', network: 'Tron' },
 ];
 
-type DepositStep = 'select' | 'payment' | 'confirming' | 'complete';
+type DepositStep = 'loading' | 'select' | 'payment' | 'confirming' | 'complete' | 'expired' | 'error';
+
+interface DepositIntent {
+  id: string;
+  coin: CoinType;
+  expected_amount: number;
+  deposit_address: string | null;
+  expires_at: string;
+  merchants: { name: string } | null;
+}
+
+interface PaymentData {
+  address: string;
+  pay_amount: number;
+  pay_currency: string;
+  network: string;
+  qr_code: string;
+  rate: number;
+  expires_at: string;
+  transaction_id: string;
+}
+
+interface TransactionData {
+  id: string;
+  status: string;
+  crypto_amount: number;
+  usd_value: number;
+  tx_hash: string | null;
+  confirmed_at: string | null;
+}
 
 export default function DepositPage() {
-  const [step, setStep] = useState<DepositStep>('select');
+  const { intentId } = useParams<{ intentId: string }>();
+  const [step, setStep] = useState<DepositStep>('loading');
   const [selectedCoin, setSelectedCoin] = useState<CoinType | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [depositIntent, setDepositIntent] = useState<DepositIntent | null>(null);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [transaction, setTransaction] = useState<TransactionData | null>(null);
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string>('--:--');
 
-  // Mock data
-  const merchantName = 'GameFi Exchange';
-  const expectedAmount = 100; // USD
-  const depositAddress = 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr';
-  const expiresIn = '14:32';
+  const { data: ratesData } = useExchangeRates();
+  const exchangeRates = ratesData?.ratesMap || {};
 
-  const handleCoinSelect = (coin: CoinType) => {
+  // Load deposit intent on mount
+  useEffect(() => {
+    if (intentId) {
+      loadDepositIntent();
+    } else {
+      // Demo mode - no intent ID
+      setStep('select');
+    }
+  }, [intentId]);
+
+  // Poll for transaction status updates
+  useEffect(() => {
+    if (!transaction?.id || step === 'complete' || step === 'expired') return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', transaction.id)
+        .maybeSingle();
+
+      if (data) {
+        setTransaction({
+          id: data.id,
+          status: data.status,
+          crypto_amount: Number(data.crypto_amount),
+          usd_value: Number(data.usd_value),
+          tx_hash: data.tx_hash,
+          confirmed_at: data.confirmed_at,
+        });
+
+        if (data.status === 'CONFIRMED') {
+          setStep('complete');
+        } else if (data.status === 'EXPIRED') {
+          setStep('expired');
+        } else if (data.status === 'FAILED') {
+          setError('Payment failed');
+          setStep('error');
+        }
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [transaction?.id, step]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!paymentData?.expires_at) return;
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const expiry = new Date(paymentData.expires_at).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        setTimeLeft('00:00');
+        setStep('expired');
+        return;
+      }
+
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [paymentData?.expires_at]);
+
+  const loadDepositIntent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('deposit_intents')
+        .select('*, merchants(name)')
+        .eq('id', intentId)
+        .maybeSingle();
+
+      if (error || !data) {
+        setError('Deposit intent not found');
+        setStep('error');
+        return;
+      }
+
+      // Check if expired
+      if (new Date(data.expires_at) < new Date()) {
+        setStep('expired');
+        return;
+      }
+
+      setDepositIntent({
+        id: data.id,
+        coin: data.coin,
+        expected_amount: Number(data.expected_amount),
+        deposit_address: data.deposit_address,
+        expires_at: data.expires_at,
+        merchants: data.merchants as { name: string } | null,
+      });
+
+      // Check for existing transaction
+      const { data: txData } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('deposit_intent_id', intentId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (txData) {
+        setTransaction({
+          id: txData.id,
+          status: txData.status,
+          crypto_amount: Number(txData.crypto_amount),
+          usd_value: Number(txData.usd_value),
+          tx_hash: txData.tx_hash,
+          confirmed_at: txData.confirmed_at,
+        });
+
+        if (txData.status === 'CONFIRMED') {
+          setStep('complete');
+          return;
+        }
+
+        if (data.deposit_address) {
+          setSelectedCoin(data.coin);
+          setPaymentData({
+            address: data.deposit_address,
+            pay_amount: Number(txData.crypto_amount),
+            pay_currency: data.coin,
+            network: '',
+            qr_code: '',
+            rate: Number(txData.exchange_rate),
+            expires_at: data.expires_at,
+            transaction_id: txData.id,
+          });
+          setStep('payment');
+          return;
+        }
+      }
+
+      // Pre-select coin if specified in intent
+      if (data.coin) {
+        setSelectedCoin(data.coin);
+      }
+
+      setStep('select');
+    } catch (err) {
+      console.error('Error loading deposit intent:', err);
+      setError('Failed to load deposit details');
+      setStep('error');
+    }
+  };
+
+  const handleCoinSelect = async (coin: CoinType) => {
     setSelectedCoin(coin);
-    setStep('payment');
+    
+    if (!intentId) {
+      // Demo mode - just show UI
+      setStep('payment');
+      return;
+    }
+
+    await createPayment(coin);
+  };
+
+  const createPayment = async (coin: CoinType) => {
+    if (!depositIntent) return;
+
+    setIsCreatingPayment(true);
+    setError(null);
+
+    try {
+      const response = await supabase.functions.invoke('create-payment', {
+        body: {
+          deposit_intent_id: depositIntent.id,
+          amount: depositIntent.expected_amount,
+          currency: 'USD',
+          pay_currency: coin,
+          user_reference: `deposit_${depositIntent.id}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create payment');
+      }
+
+      const result = response.data;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create payment');
+      }
+
+      setPaymentData({
+        address: result.data.address,
+        pay_amount: result.data.pay_amount,
+        pay_currency: result.data.pay_currency,
+        network: result.data.network,
+        qr_code: result.data.qr_code,
+        rate: result.data.rate,
+        expires_at: result.data.expires_at,
+        transaction_id: result.data.transaction_id,
+      });
+
+      if (result.data.transaction_id) {
+        setTransaction({
+          id: result.data.transaction_id,
+          status: 'PENDING',
+          crypto_amount: result.data.pay_amount,
+          usd_value: depositIntent.expected_amount,
+          tx_hash: null,
+          confirmed_at: null,
+        });
+      }
+
+      setStep('payment');
+    } catch (err) {
+      console.error('Error creating payment:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create payment');
+      setStep('error');
+    } finally {
+      setIsCreatingPayment(false);
+    }
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(depositAddress);
+    const address = paymentData?.address || 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr';
+    navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const simulatePayment = () => {
-    setStep('confirming');
-    setTimeout(() => setStep('complete'), 3000);
-  };
-
-  const cryptoAmount = selectedCoin 
-    ? (expectedAmount / exchangeRates[selectedCoin]).toFixed(8)
-    : '0';
+  const merchantName = depositIntent?.merchants?.name || 'Demo Merchant';
+  const expectedAmount = depositIntent?.expected_amount || 100;
+  const cryptoAmount = paymentData?.pay_amount || 
+    (selectedCoin ? (expectedAmount / (exchangeRates[selectedCoin] || 1)).toFixed(8) : '0');
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -71,10 +324,12 @@ export default function DepositPage() {
             <span className="font-semibold">CryptoGate</span>
           </div>
           
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Expires in {expiresIn}</span>
-          </div>
+          {step === 'payment' && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Expires in {timeLeft}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -84,6 +339,35 @@ export default function DepositPage() {
           <p className="text-sm text-muted-foreground mb-1">Payment to</p>
           <h1 className="text-2xl font-bold">{merchantName}</h1>
         </div>
+
+        {/* Loading */}
+        {step === 'loading' && (
+          <Card className="border-border/50 animate-fade-in">
+            <CardContent className="py-12 flex flex-col items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Loading payment details...</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error */}
+        {step === 'error' && (
+          <Card className="border-destructive/30 animate-fade-in">
+            <CardContent className="py-12 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-destructive" />
+                </div>
+              </div>
+              <h2 className="text-xl font-bold mb-2">Error</h2>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Step: Select Coin */}
         {step === 'select' && (
@@ -98,7 +382,7 @@ export default function DepositPage() {
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Amount to pay</span>
-                  <span className="text-3xl font-bold">${expectedAmount}.00</span>
+                  <span className="text-3xl font-bold">${expectedAmount.toLocaleString()}</span>
                 </div>
               </div>
               
@@ -106,7 +390,8 @@ export default function DepositPage() {
                 <button
                   key={item.coin}
                   onClick={() => handleCoinSelect(item.coin)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border/50 bg-card hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 group"
+                  disabled={isCreatingPayment}
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border/50 bg-card hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 group disabled:opacity-50"
                 >
                   <div className="flex items-center gap-3">
                     <CoinBadge coin={item.coin} />
@@ -116,10 +401,17 @@ export default function DepositPage() {
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground font-mono">
-                    ≈ {(expectedAmount / exchangeRates[item.coin]).toFixed(6)}
+                    ≈ {(expectedAmount / (exchangeRates[item.coin] || 1)).toFixed(6)}
                   </span>
                 </button>
               ))}
+
+              {isCreatingPayment && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                  <span className="text-muted-foreground">Creating payment...</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -147,21 +439,31 @@ export default function DepositPage() {
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-sm text-muted-foreground mb-1">Send exactly</p>
                 <p className="text-3xl font-bold font-mono">{cryptoAmount} {selectedCoin}</p>
-                <p className="text-sm text-muted-foreground mt-1">≈ ${expectedAmount}.00 USD</p>
+                <p className="text-sm text-muted-foreground mt-1">≈ ${expectedAmount.toLocaleString()} USD</p>
               </div>
 
-              {/* QR Code placeholder */}
+              {/* QR Code */}
               <div className="flex justify-center">
-                <div className="w-48 h-48 bg-muted/50 rounded-xl flex items-center justify-center border border-border/50">
-                  <QrCode className="h-32 w-32 text-muted-foreground" />
-                </div>
+                {paymentData?.qr_code ? (
+                  <img 
+                    src={paymentData.qr_code} 
+                    alt="Payment QR Code" 
+                    className="w-48 h-48 rounded-xl border border-border/50"
+                  />
+                ) : (
+                  <div className="w-48 h-48 bg-muted/50 rounded-xl flex items-center justify-center border border-border/50">
+                    <QrCode className="h-32 w-32 text-muted-foreground" />
+                  </div>
+                )}
               </div>
 
               {/* Address */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2">To this address</p>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <span className="font-mono text-sm flex-1 break-all">{depositAddress}</span>
+                  <span className="font-mono text-sm flex-1 break-all">
+                    {paymentData?.address || 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr'}
+                  </span>
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -188,37 +490,11 @@ export default function DepositPage() {
                 </div>
               </div>
 
-              {/* Demo button */}
-              <Button 
-                className="w-full glow-primary" 
-                size="lg"
-                onClick={simulatePayment}
-              >
-                I've sent the payment
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step: Confirming */}
-        {step === 'confirming' && (
-          <Card className="border-border/50 animate-fade-in">
-            <CardContent className="py-12 text-center">
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                  </div>
-                  <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-pulse" />
-                </div>
+              {/* Waiting indicator */}
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Waiting for payment...</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">Confirming Payment</h2>
-              <p className="text-muted-foreground">
-                Waiting for blockchain confirmation...
-              </p>
-              <p className="text-sm text-muted-foreground mt-4 font-mono">
-                0/3 confirmations
-              </p>
             </CardContent>
           </Card>
         )}
@@ -240,7 +516,9 @@ export default function DepositPage() {
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50 max-w-xs mx-auto">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-mono font-semibold">{cryptoAmount} {selectedCoin}</span>
+                  <span className="font-mono font-semibold">
+                    {transaction?.crypto_amount.toFixed(6)} {selectedCoin}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
@@ -250,6 +528,30 @@ export default function DepositPage() {
 
               <Button 
                 className="mt-8" 
+                variant="outline"
+                onClick={() => window.close()}
+              >
+                Close Window
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step: Expired */}
+        {step === 'expired' && (
+          <Card className="border-border/50 border-status-expired/30 animate-fade-in">
+            <CardContent className="py-12 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-status-expired/10 flex items-center justify-center">
+                  <Clock className="h-10 w-10 text-status-expired" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Payment Expired</h2>
+              <p className="text-muted-foreground mb-6">
+                This payment link has expired. Please request a new payment.
+              </p>
+
+              <Button 
                 variant="outline"
                 onClick={() => window.close()}
               >

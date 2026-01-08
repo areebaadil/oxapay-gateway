@@ -3,24 +3,87 @@ import { StatCard } from '@/components/ui/StatCard';
 import { VolumeChart } from '@/components/charts/VolumeChart';
 import { CoinDistributionChart } from '@/components/charts/CoinDistributionChart';
 import { TransactionsTable } from '@/components/tables/TransactionsTable';
-import { mockTransactions, mockMerchants, getAnalyticsData } from '@/lib/mock-data';
+import { useMerchants } from '@/hooks/useMerchants';
+import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
+import { useSettlements } from '@/hooks/useSettlements';
 import { 
   DollarSign, 
   ArrowDownToLine, 
   Users, 
   TrendingUp,
   Wallet,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const analytics = getAnalyticsData();
-  const recentTransactions = mockTransactions.slice(0, 5);
+  const navigate = useNavigate();
+  const { data: merchants, isLoading: merchantsLoading } = useMerchants();
+  const { data: transactions, isLoading: txLoading } = useTransactions();
+  const { data: stats, isLoading: statsLoading } = useTransactionStats();
+  const { data: settlements } = useSettlements('PENDING');
+
+  const recentTransactions = transactions?.slice(0, 5) || [];
   const merchantNames = Object.fromEntries(
-    mockMerchants.map(m => [m.id, m.name])
+    (merchants || []).map(m => [m.id, m.name])
   );
+
+  // Transform transactions for table component
+  const tableTransactions = recentTransactions.map(tx => ({
+    id: tx.id,
+    merchantId: tx.merchant_id,
+    depositIntentId: tx.deposit_intent_id || '',
+    coin: tx.coin,
+    cryptoAmount: Number(tx.crypto_amount),
+    usdValue: Number(tx.usd_value),
+    exchangeRate: Number(tx.exchange_rate),
+    status: tx.status,
+    txHash: tx.tx_hash,
+    userReference: tx.user_reference,
+    createdAt: new Date(tx.created_at),
+    confirmedAt: tx.confirmed_at ? new Date(tx.confirmed_at) : null,
+  }));
+
+  // Generate volume by day data (last 7 days)
+  const volumeByDay = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    const dateStr = date.toISOString().split('T')[0];
+    const dayTxs = (transactions || []).filter(tx => {
+      const txDate = new Date(tx.created_at).toISOString().split('T')[0];
+      return txDate === dateStr && (tx.status === 'CONFIRMED' || tx.status === 'SETTLED');
+    });
+    return {
+      date: dateStr,
+      volume: dayTxs.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
+      count: dayTxs.length,
+    };
+  });
+
+  // Transform coin distribution data
+  const coinDistribution = (stats?.volumeByCoin || []).map(item => ({
+    coin: item.coin as 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX',
+    volume: 0,
+    usdVolume: item.usdVolume,
+  }));
+
+  const isLoading = merchantsLoading || txLoading || statsLoading;
+  const activeMerchants = (merchants || []).filter(m => m.is_enabled).length;
+  const totalVolume = stats?.totalVolume || 0;
+  const platformFees = totalVolume * 0.015;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="admin" title="Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin" title="Dashboard">
@@ -31,8 +94,8 @@ export default function AdminDashboard() {
           <div className="relative">
             <h2 className="text-2xl font-bold mb-2">Welcome back, Admin</h2>
             <p className="text-muted-foreground max-w-lg">
-              Your gateway processed <span className="text-primary font-semibold">${analytics.totalVolume.toLocaleString()}</span> in 
-              the last 7 days across <span className="text-primary font-semibold">{analytics.confirmedTransactions}</span> confirmed transactions.
+              Your gateway processed <span className="text-primary font-semibold">${totalVolume.toLocaleString()}</span> in 
+              the last 7 days across <span className="text-primary font-semibold">{stats?.confirmedTransactions || 0}</span> confirmed transactions.
             </p>
           </div>
         </div>
@@ -41,27 +104,27 @@ export default function AdminDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Volume (7d)"
-            value={`$${(analytics.totalVolume / 1000).toFixed(1)}k`}
+            value={`$${(totalVolume / 1000).toFixed(1)}k`}
             icon={DollarSign}
             trend={{ value: 12.5, isPositive: true }}
             subtitle="vs last week"
           />
           <StatCard
             title="Total Transactions"
-            value={analytics.totalTransactions.toString()}
+            value={(stats?.totalTransactions || 0).toString()}
             icon={ArrowDownToLine}
             trend={{ value: 8.2, isPositive: true }}
             subtitle="vs last week"
           />
           <StatCard
             title="Active Merchants"
-            value={mockMerchants.filter(m => m.isEnabled).length.toString()}
+            value={activeMerchants.toString()}
             icon={Users}
-            subtitle={`${mockMerchants.length} total`}
+            subtitle={`${merchants?.length || 0} total`}
           />
           <StatCard
             title="Platform Revenue"
-            value={`$${analytics.totalFees.toFixed(0)}`}
+            value={`$${platformFees.toFixed(0)}`}
             icon={TrendingUp}
             trend={{ value: 15.3, isPositive: true }}
             subtitle="from fees"
@@ -80,7 +143,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <VolumeChart data={analytics.volumeByDay} />
+              <VolumeChart data={volumeByDay} />
             </CardContent>
           </Card>
 
@@ -89,21 +152,30 @@ export default function AdminDashboard() {
               <CardTitle className="text-lg font-semibold">Coin Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              <CoinDistributionChart data={analytics.volumeByCoin} />
+              {coinDistribution.length > 0 ? (
+                <CoinDistributionChart data={coinDistribution} />
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No transaction data yet
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Quick Actions */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
+          <Card 
+            className="border-border/50 hover:border-primary/30 transition-colors cursor-pointer group"
+            onClick={() => navigate('/admin/settlements')}
+          >
             <CardContent className="flex items-center gap-4 p-6">
               <div className="rounded-xl bg-status-pending/10 p-3 group-hover:bg-status-pending/20 transition-colors">
                 <Clock className="h-6 w-6 text-status-pending" />
               </div>
               <div>
                 <p className="font-semibold">Pending Settlements</p>
-                <p className="text-2xl font-bold text-status-pending">3</p>
+                <p className="text-2xl font-bold text-status-pending">{settlements?.length || 0}</p>
               </div>
             </CardContent>
           </Card>
@@ -115,19 +187,27 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="font-semibold">Today's Deposits</p>
-                <p className="text-2xl font-bold text-status-confirmed">12</p>
+                <p className="text-2xl font-bold text-status-confirmed">
+                  {(transactions || []).filter(tx => {
+                    const today = new Date().toISOString().split('T')[0];
+                    return new Date(tx.created_at).toISOString().split('T')[0] === today;
+                  }).length}
+                </p>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="border-border/50 hover:border-primary/30 transition-colors cursor-pointer group">
+          <Card 
+            className="border-border/50 hover:border-primary/30 transition-colors cursor-pointer group"
+            onClick={() => navigate('/admin/merchants')}
+          >
             <CardContent className="flex items-center gap-4 p-6">
               <div className="rounded-xl bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="font-semibold">New Merchants</p>
-                <p className="text-2xl font-bold text-primary">2</p>
+                <p className="font-semibold">Total Merchants</p>
+                <p className="text-2xl font-bold text-primary">{merchants?.length || 0}</p>
               </div>
             </CardContent>
           </Card>
@@ -137,11 +217,13 @@ export default function AdminDashboard() {
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
-            <Button variant="outline" size="sm">View All</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/transactions')}>
+              View All
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             <TransactionsTable 
-              transactions={recentTransactions} 
+              transactions={tableTransactions} 
               showMerchant 
               merchantNames={merchantNames}
             />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockMerchants, mockTransactions } from '@/lib/mock-data';
+import { useMerchants, useCreateMerchant, useUpdateMerchant } from '@/hooks/useMerchants';
+import { useTransactions } from '@/hooks/useTransactions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import {
   Edit,
   Pause,
   Play,
-  Trash2
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,24 +37,66 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export default function Merchants() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    webhook_url: '',
+    fee_percentage: '1.5',
+  });
 
-  const filteredMerchants = mockMerchants.filter(m => 
+  const { data: merchants, isLoading } = useMerchants();
+  const { data: transactions } = useTransactions();
+  const createMerchant = useCreateMerchant();
+  const updateMerchant = useUpdateMerchant();
+
+  const filteredMerchants = (merchants || []).filter(m => 
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getMerchantStats = (merchantId: string) => {
-    const txs = mockTransactions.filter(tx => tx.merchantId === merchantId);
+    const txs = (transactions || []).filter(tx => tx.merchant_id === merchantId);
     const confirmed = txs.filter(tx => tx.status === 'CONFIRMED' || tx.status === 'SETTLED');
     return {
       totalTx: txs.length,
-      volume: confirmed.reduce((sum, tx) => sum + tx.usdValue, 0),
+      volume: confirmed.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
     };
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMerchant.mutate({
+      name: formData.name,
+      email: formData.email,
+      webhook_url: formData.webhook_url || undefined,
+      fee_percentage: parseFloat(formData.fee_percentage),
+    }, {
+      onSuccess: () => {
+        setIsCreateOpen(false);
+        setFormData({ name: '', email: '', webhook_url: '', fee_percentage: '1.5' });
+      }
+    });
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    updateMerchant.mutate({ id, is_enabled: !currentStatus });
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="admin" title="Merchants">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin" title="Merchants">
@@ -81,29 +124,55 @@ export default function Merchants() {
                   Add a new merchant to the platform. They will receive API credentials via email.
                 </DialogDescription>
               </DialogHeader>
-              <form className="space-y-4 mt-4">
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Business Name</Label>
-                  <Input id="name" placeholder="Acme Corp" />
+                  <Input 
+                    id="name" 
+                    placeholder="Acme Corp" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" placeholder="admin@acme.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="admin@acme.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="webhook">Webhook URL</Label>
-                  <Input id="webhook" placeholder="https://acme.com/webhooks" />
+                  <Input 
+                    id="webhook" 
+                    placeholder="https://acme.com/webhooks"
+                    value={formData.webhook_url}
+                    onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fee">Fee Percentage</Label>
-                  <Input id="fee" type="number" step="0.1" placeholder="1.5" />
+                  <Input 
+                    id="fee" 
+                    type="number" 
+                    step="0.1" 
+                    placeholder="1.5"
+                    value={formData.fee_percentage}
+                    onChange={(e) => setFormData({ ...formData, fee_percentage: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="flex-1">
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1">
-                    Create Merchant
+                  <Button type="submit" className="flex-1" disabled={createMerchant.isPending}>
+                    {createMerchant.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Merchant'}
                   </Button>
                 </div>
               </form>
@@ -134,7 +203,7 @@ export default function Merchants() {
                 key={merchant.id} 
                 className={cn(
                   "border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-lg animate-fade-in",
-                  !merchant.isEnabled && "opacity-60"
+                  !merchant.is_enabled && "opacity-60"
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -148,7 +217,7 @@ export default function Merchants() {
                         {merchant.name}
                       </CardTitle>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {merchant.id}
+                        {merchant.id.slice(0, 8)}...
                       </p>
                     </div>
                   </div>
@@ -164,13 +233,13 @@ export default function Merchants() {
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/admin/transactions')}>
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View Transactions
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        {merchant.isEnabled ? (
+                      <DropdownMenuItem onClick={() => handleToggleStatus(merchant.id, merchant.is_enabled)}>
+                        {merchant.is_enabled ? (
                           <>
                             <Pause className="mr-2 h-4 w-4" />
                             Suspend
@@ -182,10 +251,6 @@ export default function Merchants() {
                           </>
                         )}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
@@ -193,14 +258,14 @@ export default function Merchants() {
                 <CardContent className="space-y-4">
                   {/* Status Badge */}
                   <Badge 
-                    variant={merchant.isEnabled ? "default" : "secondary"}
+                    variant={merchant.is_enabled ? "default" : "secondary"}
                     className={cn(
-                      merchant.isEnabled 
+                      merchant.is_enabled 
                         ? "bg-status-confirmed/10 text-status-confirmed border-status-confirmed/30" 
                         : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {merchant.isEnabled ? 'Active' : 'Suspended'}
+                    {merchant.is_enabled ? 'Active' : 'Suspended'}
                   </Badge>
                   
                   {/* Details */}
@@ -209,13 +274,15 @@ export default function Merchants() {
                       <Mail className="h-4 w-4" />
                       <span className="truncate">{merchant.email}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Globe className="h-4 w-4" />
-                      <span className="truncate text-xs">{merchant.webhookUrl}</span>
-                    </div>
+                    {merchant.webhook_url && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Globe className="h-4 w-4" />
+                        <span className="truncate text-xs">{merchant.webhook_url}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Percent className="h-4 w-4" />
-                      <span>{merchant.feePercentage}% platform fee</span>
+                      <span>{merchant.fee_percentage}% platform fee</span>
                     </div>
                   </div>
                   

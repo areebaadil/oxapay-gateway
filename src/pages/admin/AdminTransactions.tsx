@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { TransactionsTable } from '@/components/tables/TransactionsTable';
-import { mockTransactions, mockMerchants } from '@/lib/mock-data';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useMerchants } from '@/hooks/useMerchants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, RefreshCw } from 'lucide-react';
+import { Search, Filter, Download, RefreshCw, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,41 +14,72 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CoinType, TransactionStatus } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminTransactions() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'ALL'>('ALL');
-  const [coinFilter, setCoinFilter] = useState<CoinType | 'ALL'>('ALL');
-  const [merchantFilter, setMerchantFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [coinFilter, setCoinFilter] = useState('ALL');
+  const [merchantFilter, setMerchantFilter] = useState('ALL');
 
-  const merchantNames = Object.fromEntries(
-    mockMerchants.map(m => [m.id, m.name])
-  );
-
-  const filteredTransactions = mockTransactions.filter(tx => {
-    if (statusFilter !== 'ALL' && tx.status !== statusFilter) return false;
-    if (coinFilter !== 'ALL' && tx.coin !== coinFilter) return false;
-    if (merchantFilter !== 'ALL' && tx.merchantId !== merchantFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        tx.id.toLowerCase().includes(query) ||
-        tx.userReference.toLowerCase().includes(query) ||
-        tx.txHash?.toLowerCase().includes(query)
-      );
-    }
-    return true;
+  const { data: merchants } = useMerchants();
+  const { data: transactions, isLoading } = useTransactions({
+    status: statusFilter,
+    coin: coinFilter,
+    merchantId: merchantFilter,
   });
 
+  const merchantNames = Object.fromEntries(
+    (merchants || []).map(m => [m.id, m.name])
+  );
+
+  // Filter by search query
+  const filteredTransactions = (transactions || []).filter(tx => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      tx.id.toLowerCase().includes(query) ||
+      tx.user_reference.toLowerCase().includes(query) ||
+      tx.tx_hash?.toLowerCase().includes(query)
+    );
+  });
+
+  // Transform for table
+  const tableTransactions = filteredTransactions.map(tx => ({
+    id: tx.id,
+    merchantId: tx.merchant_id,
+    depositIntentId: tx.deposit_intent_id || '',
+    coin: tx.coin,
+    cryptoAmount: Number(tx.crypto_amount),
+    usdValue: Number(tx.usd_value),
+    exchangeRate: Number(tx.exchange_rate),
+    status: tx.status,
+    txHash: tx.tx_hash,
+    userReference: tx.user_reference,
+    createdAt: new Date(tx.created_at),
+    confirmedAt: tx.confirmed_at ? new Date(tx.confirmed_at) : null,
+  }));
+
+  const allTransactions = transactions || [];
   const statusCounts = {
-    ALL: mockTransactions.length,
-    PENDING: mockTransactions.filter(tx => tx.status === 'PENDING').length,
-    CONFIRMED: mockTransactions.filter(tx => tx.status === 'CONFIRMED').length,
-    FAILED: mockTransactions.filter(tx => tx.status === 'FAILED').length,
-    EXPIRED: mockTransactions.filter(tx => tx.status === 'EXPIRED').length,
-    SETTLED: mockTransactions.filter(tx => tx.status === 'SETTLED').length,
+    ALL: allTransactions.length,
+    PENDING: allTransactions.filter(tx => tx.status === 'PENDING').length,
+    CONFIRMED: allTransactions.filter(tx => tx.status === 'CONFIRMED').length,
+    FAILED: allTransactions.filter(tx => tx.status === 'FAILED').length,
+    EXPIRED: allTransactions.filter(tx => tx.status === 'EXPIRED').length,
+    SETTLED: allTransactions.filter(tx => tx.status === 'SETTLED').length,
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="admin" title="Transactions">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin" title="Transactions">
@@ -62,7 +94,11 @@ export default function AdminTransactions() {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['transactions'] })}
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -111,7 +147,7 @@ export default function AdminTransactions() {
                 />
               </div>
               
-              <Select value={coinFilter} onValueChange={(v) => setCoinFilter(v as CoinType | 'ALL')}>
+              <Select value={coinFilter} onValueChange={setCoinFilter}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Coin" />
                 </SelectTrigger>
@@ -132,7 +168,7 @@ export default function AdminTransactions() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Merchants</SelectItem>
-                  {mockMerchants.map(m => (
+                  {(merchants || []).map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -143,7 +179,7 @@ export default function AdminTransactions() {
 
         {/* Transactions Table */}
         <TransactionsTable 
-          transactions={filteredTransactions}
+          transactions={tableTransactions}
           showMerchant
           merchantNames={merchantNames}
         />
@@ -151,11 +187,11 @@ export default function AdminTransactions() {
         {/* Pagination placeholder */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {filteredTransactions.length} of {mockTransactions.length} transactions
+            Showing {filteredTransactions.length} transactions
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled>Previous</Button>
-            <Button variant="outline" size="sm">Next</Button>
+            <Button variant="outline" size="sm" disabled>Next</Button>
           </div>
         </div>
       </div>

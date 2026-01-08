@@ -12,6 +12,7 @@ import Merchants from "./pages/admin/Merchants";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import Settlements from "./pages/admin/Settlements";
 import ApiDocs from "./pages/admin/ApiDocs";
+import WebhookLogs from "./pages/admin/WebhookLogs";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import MerchantTransactions from "./pages/merchant/MerchantTransactions";
 import MerchantLedger from "./pages/merchant/MerchantLedger";
@@ -53,6 +54,11 @@ const App = () => (
             <Route path="/admin/api-docs" element={
               <ProtectedRoute requiredRole="admin">
                 <ApiDocs />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/webhooks" element={
+              <ProtectedRoute requiredRole="admin">
+                <WebhookLogs />
               </ProtectedRoute>
             } />
             

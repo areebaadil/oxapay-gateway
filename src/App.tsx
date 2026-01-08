@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import Merchants from "./pages/admin/Merchants";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import Settlements from "./pages/admin/Settlements";
+import ApiDocs from "./pages/admin/ApiDocs";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import MerchantTransactions from "./pages/merchant/MerchantTransactions";
 import MerchantLedger from "./pages/merchant/MerchantLedger";
@@ -47,6 +48,11 @@ const App = () => (
             <Route path="/admin/settlements" element={
               <ProtectedRoute requiredRole="admin">
                 <Settlements />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/api-docs" element={
+              <ProtectedRoute requiredRole="admin">
+                <ApiDocs />
               </ProtectedRoute>
             } />
             

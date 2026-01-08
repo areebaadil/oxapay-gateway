@@ -10,7 +10,8 @@ import {
   Wallet,
   Activity,
   LogOut,
-  Shield
+  Shield,
+  Book
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ const adminLinks = [
   { to: '/admin/ledger', icon: FileText, label: 'Ledger' },
   { to: '/admin/settlements', icon: Wallet, label: 'Settlements' },
   { to: '/admin/analytics', icon: Activity, label: 'Analytics' },
+  { to: '/admin/api-docs', icon: Book, label: 'API Docs' },
 ];
 
 const merchantLinks = [

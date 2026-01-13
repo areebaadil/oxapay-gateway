@@ -4,7 +4,7 @@ export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED' |
 
 export type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
 
-export type UserRole = 'admin' | 'merchant';
+export type UserRole = 'admin' | 'merchant' | 'agent';
 
 export interface Admin {
   id: string;

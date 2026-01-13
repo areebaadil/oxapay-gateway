@@ -54,27 +54,27 @@ export default function AgentDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="My Merchants"
-            value={merchantCount}
+            value={String(merchantCount)}
             icon={Users}
-            description="Active merchants"
+            subtitle="Active merchants"
           />
           <StatCard
             title="Total Transactions"
-            value={transactions.length}
+            value={String(transactions.length)}
             icon={ArrowDownToLine}
-            description="All time"
+            subtitle="All time"
           />
           <StatCard
             title="Total Volume"
             value={`$${totalVolume.toLocaleString()}`}
             icon={DollarSign}
-            description="Confirmed deposits"
+            subtitle="Confirmed deposits"
           />
           <StatCard
             title="Fee Limits"
             value={`${agent?.max_deposit_fee_percentage}%`}
             icon={TrendingUp}
-            description={`Max: ${agent?.max_deposit_fee_percentage}% / ${agent?.max_withdrawal_fee_percentage}%`}
+            subtitle={`Max: ${agent?.max_deposit_fee_percentage}% / ${agent?.max_withdrawal_fee_percentage}%`}
           />
         </div>
 

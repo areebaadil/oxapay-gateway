@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useSettlements, useProcessSettlement } from '@/hooks/useSettlements';
+import { useSettlements, useProcessSettlement, useCompleteSettlement } from '@/hooks/useSettlements';
 import { useMerchants } from '@/hooks/useMerchants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CoinBadge } from '@/components/ui/CoinBadge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   CheckCircle, 
@@ -13,7 +24,8 @@ import {
   Wallet,
   Copy,
   ExternalLink,
-  Loader2
+  Loader2,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,13 +33,21 @@ export default function Settlements() {
   const { data: merchants } = useMerchants();
   const { data: allSettlements, isLoading } = useSettlements();
   const processSettlement = useProcessSettlement();
+  const completeSettlement = useCompleteSettlement();
+  
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [selectedSettlement, setSelectedSettlement] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState('');
 
   const merchantNames = Object.fromEntries(
     (merchants || []).map(m => [m.id, m.name])
   );
 
   const pendingSettlements = (allSettlements || []).filter(s => s.status === 'PENDING');
-  const processedSettlements = (allSettlements || []).filter(s => s.status !== 'PENDING');
+  const approvedSettlements = (allSettlements || []).filter(s => s.status === 'APPROVED');
+  const completedSettlements = (allSettlements || []).filter(s => 
+    s.status === 'COMPLETED' || s.status === 'REJECTED'
+  );
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 12)}...${address.slice(-10)}`;
@@ -39,6 +59,26 @@ export default function Settlements() {
 
   const handleReject = (id: string) => {
     processSettlement.mutate({ id, status: 'REJECTED' });
+  };
+
+  const handleComplete = () => {
+    if (!selectedSettlement || !txHash) return;
+    
+    completeSettlement.mutate(
+      { settlementId: selectedSettlement, txHash },
+      {
+        onSuccess: () => {
+          setCompleteDialogOpen(false);
+          setSelectedSettlement(null);
+          setTxHash('');
+        }
+      }
+    );
+  };
+
+  const openCompleteDialog = (id: string) => {
+    setSelectedSettlement(id);
+    setCompleteDialogOpen(true);
   };
 
   if (isLoading) {
@@ -58,9 +98,56 @@ export default function Settlements() {
         <div>
           <h1 className="text-2xl font-bold">Settlement Management</h1>
           <p className="text-muted-foreground">
-            Review and approve merchant settlement requests
+            Review, approve, and process merchant settlement requests
           </p>
         </div>
+
+        {/* Complete Settlement Dialog */}
+        <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Complete Settlement</DialogTitle>
+              <DialogDescription>
+                Enter the transaction hash to confirm the settlement has been sent.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Transaction Hash</Label>
+                <Input
+                  placeholder="Enter blockchain transaction hash"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  className="font-mono"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCompleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleComplete}
+                disabled={!txHash || completeSettlement.isPending}
+                className="bg-status-confirmed hover:bg-status-confirmed/90"
+              >
+                {completeSettlement.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Completing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Mark Complete
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Pending Settlements */}
         <Card className="border-border/50 border-status-pending/30">
@@ -156,13 +243,88 @@ export default function Settlements() {
           </CardContent>
         </Card>
 
+        {/* Approved Settlements - Ready to Send */}
+        {approvedSettlements.length > 0 && (
+          <Card className="border-border/50 border-blue-500/30">
+            <CardHeader className="flex flex-row items-center gap-3 pb-4">
+              <div className="rounded-lg bg-blue-500/10 p-2">
+                <Send className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Ready to Send</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {approvedSettlements.length} approved settlement{approvedSettlements.length !== 1 ? 's' : ''} awaiting payment
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {approvedSettlements.map((settlement, index) => (
+                <div 
+                  key={settlement.id}
+                  className={cn(
+                    "flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 animate-fade-in",
+                  )}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <Wallet className="h-6 w-6 text-blue-500" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold">
+                          {merchantNames[settlement.merchant_id] || 'Unknown Merchant'}
+                        </span>
+                        <CoinBadge coin={settlement.coin} />
+                        <StatusBadge status={settlement.status} />
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-mono text-foreground">{settlement.wallet_address}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5"
+                          onClick={() => navigator.clipboard.writeText(settlement.wallet_address)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold font-mono">
+                        {Number(settlement.amount).toFixed(6)} {settlement.coin}
+                      </p>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        ≈ ${Number(settlement.usd_value_at_request).toLocaleString()}
+                      </p>
+                    </div>
+                    
+                    <Button 
+                      size="sm"
+                      onClick={() => openCompleteDialog(settlement.id)}
+                      className="bg-blue-500 hover:bg-blue-600"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Mark as Sent
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Processed Settlements */}
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="text-lg">Settlement History</CardTitle>
           </CardHeader>
           <CardContent>
-            {processedSettlements.length > 0 ? (
+            {completedSettlements.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="data-table">
                   <thead>
@@ -178,7 +340,7 @@ export default function Settlements() {
                     </tr>
                   </thead>
                   <tbody>
-                    {processedSettlements.map((settlement, index) => (
+                    {completedSettlements.map((settlement, index) => (
                       <tr 
                         key={settlement.id}
                         className="animate-fade-in"

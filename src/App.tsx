@@ -16,6 +16,8 @@ import WebhookLogs from "./pages/admin/WebhookLogs";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import MerchantTransactions from "./pages/merchant/MerchantTransactions";
 import MerchantLedger from "./pages/merchant/MerchantLedger";
+import MerchantSettlements from "./pages/merchant/MerchantSettlements";
+import MerchantApiKeys from "./pages/merchant/MerchantApiKeys";
 import DepositPage from "./pages/deposit/DepositPage";
 
 const queryClient = new QueryClient();
@@ -76,6 +78,16 @@ const App = () => (
             <Route path="/merchant/ledger" element={
               <ProtectedRoute requiredRole="merchant">
                 <MerchantLedger />
+              </ProtectedRoute>
+            } />
+            <Route path="/merchant/settlements" element={
+              <ProtectedRoute requiredRole="merchant">
+                <MerchantSettlements />
+              </ProtectedRoute>
+            } />
+            <Route path="/merchant/api" element={
+              <ProtectedRoute requiredRole="merchant">
+                <MerchantApiKeys />
               </ProtectedRoute>
             } />
             

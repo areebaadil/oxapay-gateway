@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Merchants from "./pages/admin/Merchants";
+import Agents from "./pages/admin/Agents";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminLedger from "./pages/admin/AdminLedger";
 import Settlements from "./pages/admin/Settlements";
@@ -19,6 +20,10 @@ import MerchantTransactions from "./pages/merchant/MerchantTransactions";
 import MerchantLedger from "./pages/merchant/MerchantLedger";
 import MerchantSettlements from "./pages/merchant/MerchantSettlements";
 import MerchantApiKeys from "./pages/merchant/MerchantApiKeys";
+import AgentDashboard from "./pages/agent/AgentDashboard";
+import AgentMerchants from "./pages/agent/AgentMerchants";
+import AgentTransactions from "./pages/agent/AgentTransactions";
+import AgentSettlements from "./pages/agent/AgentSettlements";
 import DepositPage from "./pages/deposit/DepositPage";
 
 const queryClient = new QueryClient();
@@ -44,6 +49,11 @@ const App = () => (
                 <Merchants />
               </ProtectedRoute>
             } />
+            <Route path="/admin/agents" element={
+              <ProtectedRoute requiredRole="admin">
+                <Agents />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/transactions" element={
               <ProtectedRoute requiredRole="admin">
                 <AdminTransactions />
@@ -67,6 +77,28 @@ const App = () => (
             <Route path="/admin/webhooks" element={
               <ProtectedRoute requiredRole="admin">
                 <WebhookLogs />
+              </ProtectedRoute>
+            } />
+            
+            {/* Agent Routes */}
+            <Route path="/agent" element={
+              <ProtectedRoute requiredRole="agent">
+                <AgentDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/agent/merchants" element={
+              <ProtectedRoute requiredRole="agent">
+                <AgentMerchants />
+              </ProtectedRoute>
+            } />
+            <Route path="/agent/transactions" element={
+              <ProtectedRoute requiredRole="agent">
+                <AgentTransactions />
+              </ProtectedRoute>
+            } />
+            <Route path="/agent/settlements" element={
+              <ProtectedRoute requiredRole="agent">
+                <AgentSettlements />
               </ProtectedRoute>
             } />
             

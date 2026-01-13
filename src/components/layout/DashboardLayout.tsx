@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  role: 'admin' | 'merchant';
+  role: 'admin' | 'merchant' | 'agent';
   title?: string;
 }
 
@@ -47,15 +47,15 @@ export function DashboardLayout({ children, role, title }: DashboardLayoutProps)
             <div className="flex items-center gap-3 pl-4 border-l border-border">
               <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
                 <span className="text-sm font-semibold text-primary">
-                  {role === 'admin' ? 'A' : 'M'}
+                  {role === 'admin' ? 'A' : role === 'agent' ? 'G' : 'M'}
                 </span>
               </div>
               <div className="hidden sm:block">
                 <p className="text-sm font-medium">
-                  {role === 'admin' ? 'Admin User' : 'GameFi Exchange'}
+                  {role === 'admin' ? 'Admin User' : role === 'agent' ? 'Agent' : 'Merchant'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {role === 'admin' ? 'Platform Owner' : 'Merchant'}
+                  {role === 'admin' ? 'Platform Owner' : role === 'agent' ? 'Sub-Admin' : 'Merchant'}
                 </p>
               </div>
             </div>

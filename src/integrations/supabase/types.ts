@@ -254,33 +254,36 @@ export type Database = {
       merchants: {
         Row: {
           created_at: string
+          deposit_fee_percentage: number
           email: string
-          fee_percentage: number
           id: string
           is_enabled: boolean
           name: string
           updated_at: string
           webhook_url: string | null
+          withdrawal_fee_percentage: number
         }
         Insert: {
           created_at?: string
+          deposit_fee_percentage?: number
           email: string
-          fee_percentage?: number
           id?: string
           is_enabled?: boolean
           name: string
           updated_at?: string
           webhook_url?: string | null
+          withdrawal_fee_percentage?: number
         }
         Update: {
           created_at?: string
+          deposit_fee_percentage?: number
           email?: string
-          fee_percentage?: number
           id?: string
           is_enabled?: boolean
           name?: string
           updated_at?: string
           webhook_url?: string | null
+          withdrawal_fee_percentage?: number
         }
         Relationships: []
       }

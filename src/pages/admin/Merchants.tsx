@@ -61,7 +61,8 @@ export default function Merchants() {
     name: '',
     email: '',
     webhook_url: '',
-    fee_percentage: '1.5',
+    deposit_fee_percentage: '1.5',
+    withdrawal_fee_percentage: '1.5',
   });
   const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
@@ -71,7 +72,8 @@ export default function Merchants() {
     email: '',
     password: '',
     webhook_url: '',
-    fee_percentage: '1.5',
+    deposit_fee_percentage: '1.5',
+    withdrawal_fee_percentage: '1.5',
   });
 
   const { data: merchants, isLoading } = useMerchants();
@@ -123,7 +125,8 @@ export default function Merchants() {
             email: formData.email,
             password: formData.password,
             webhook_url: formData.webhook_url || null,
-            fee_percentage: parseFloat(formData.fee_percentage),
+            deposit_fee_percentage: parseFloat(formData.deposit_fee_percentage),
+            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage),
           }),
         }
       );
@@ -140,7 +143,7 @@ export default function Merchants() {
       });
       
       setIsCreateOpen(false);
-      setFormData({ name: '', email: '', password: '', webhook_url: '', fee_percentage: '1.5' });
+      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5' });
       // Refresh merchants list
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
     } catch (error: unknown) {
@@ -163,7 +166,8 @@ export default function Merchants() {
       name: merchant.name,
       email: merchant.email,
       webhook_url: merchant.webhook_url || '',
-      fee_percentage: String(merchant.fee_percentage),
+      deposit_fee_percentage: String(merchant.deposit_fee_percentage),
+      withdrawal_fee_percentage: String(merchant.withdrawal_fee_percentage),
     });
     setEditDialog({ open: true, merchant });
   };
@@ -177,7 +181,8 @@ export default function Merchants() {
       name: editFormData.name,
       email: editFormData.email,
       webhook_url: editFormData.webhook_url || null,
-      fee_percentage: parseFloat(editFormData.fee_percentage),
+      deposit_fee_percentage: parseFloat(editFormData.deposit_fee_percentage),
+      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage),
     }, {
       onSuccess: () => {
         setEditDialog(null);
@@ -291,17 +296,31 @@ export default function Merchants() {
                     Receives notifications for transactions, settlements, etc.
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fee">Fee Percentage</Label>
-                  <Input 
-                    id="fee" 
-                    type="number" 
-                    step="0.1" 
-                    placeholder="1.5"
-                    value={formData.fee_percentage}
-                    onChange={(e) => setFormData({ ...formData, fee_percentage: e.target.value })}
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="deposit-fee">Deposit Fee %</Label>
+                    <Input 
+                      id="deposit-fee" 
+                      type="number" 
+                      step="0.1" 
+                      placeholder="1.5"
+                      value={formData.deposit_fee_percentage}
+                      onChange={(e) => setFormData({ ...formData, deposit_fee_percentage: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="withdrawal-fee">Withdrawal Fee %</Label>
+                    <Input 
+                      id="withdrawal-fee" 
+                      type="number" 
+                      step="0.1" 
+                      placeholder="1.5"
+                      value={formData.withdrawal_fee_percentage}
+                      onChange={(e) => setFormData({ ...formData, withdrawal_fee_percentage: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="flex-1">
@@ -434,7 +453,7 @@ export default function Merchants() {
                     )}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Percent className="h-4 w-4" />
-                      <span>{merchant.fee_percentage}% platform fee</span>
+                      <span>Deposit: {merchant.deposit_fee_percentage}% | Withdrawal: {merchant.withdrawal_fee_percentage}%</span>
                     </div>
                   </div>
                   
@@ -605,16 +624,29 @@ export default function Merchants() {
                   onChange={(e) => setEditFormData({ ...editFormData, webhook_url: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-fee">Fee Percentage</Label>
-                <Input 
-                  id="edit-fee" 
-                  type="number" 
-                  step="0.1" 
-                  value={editFormData.fee_percentage}
-                  onChange={(e) => setEditFormData({ ...editFormData, fee_percentage: e.target.value })}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-deposit-fee">Deposit Fee %</Label>
+                  <Input 
+                    id="edit-deposit-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.deposit_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, deposit_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-withdrawal-fee">Withdrawal Fee %</Label>
+                  <Input 
+                    id="edit-withdrawal-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.withdrawal_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, withdrawal_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setEditDialog(null)} className="flex-1">

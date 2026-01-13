@@ -51,7 +51,7 @@ serve(async (req) => {
       });
     }
 
-    const { name, email, password, webhook_url, fee_percentage } = await req.json();
+    const { name, email, password, webhook_url, deposit_fee_percentage, withdrawal_fee_percentage } = await req.json();
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -75,7 +75,8 @@ serve(async (req) => {
         name,
         email,
         webhook_url: webhook_url || null,
-        fee_percentage: fee_percentage || 1.5,
+        deposit_fee_percentage: deposit_fee_percentage || 1.5,
+        withdrawal_fee_percentage: withdrawal_fee_percentage || 1.5,
       })
       .select()
       .single();

@@ -38,6 +38,78 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_merchants: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          merchant_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          merchant_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_merchants_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_merchants_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: true
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_enabled: boolean
+          max_deposit_fee_percentage: number
+          max_withdrawal_fee_percentage: number
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_enabled?: boolean
+          max_deposit_fee_percentage?: number
+          max_withdrawal_fee_percentage?: number
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_enabled?: boolean
+          max_deposit_fee_percentage?: number
+          max_withdrawal_fee_percentage?: number
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -461,12 +533,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_agent_id: { Args: { _user_id: string }; Returns: string }
       get_user_merchant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      merchant_belongs_to_agent: {
+        Args: { _agent_id: string; _merchant_id: string }
         Returns: boolean
       }
     }
@@ -481,7 +558,7 @@ export type Database = {
         | "FAILED"
         | "EXPIRED"
         | "SETTLED"
-      user_role: "admin" | "merchant"
+      user_role: "admin" | "merchant" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -620,7 +697,7 @@ export const Constants = {
         "EXPIRED",
         "SETTLED",
       ],
-      user_role: ["admin", "merchant"],
+      user_role: ["admin", "merchant", "agent"],
     },
   },
 } as const

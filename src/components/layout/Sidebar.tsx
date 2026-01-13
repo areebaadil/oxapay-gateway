@@ -18,17 +18,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
-  role: 'admin' | 'merchant';
+  role: 'admin' | 'merchant' | 'agent';
 }
 
 const adminLinks = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/merchants', icon: Users, label: 'Merchants' },
+  { to: '/admin/agents', icon: Shield, label: 'Agents' },
   { to: '/admin/transactions', icon: ArrowDownToLine, label: 'Transactions' },
   { to: '/admin/ledger', icon: FileText, label: 'Ledger' },
   { to: '/admin/settlements', icon: Wallet, label: 'Settlements' },
   { to: '/admin/webhooks', icon: Webhook, label: 'Webhooks' },
   { to: '/admin/api-docs', icon: Book, label: 'API Docs' },
+];
+
+const agentLinks = [
+  { to: '/agent', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/agent/merchants', icon: Users, label: 'My Merchants' },
+  { to: '/agent/transactions', icon: ArrowDownToLine, label: 'Transactions' },
+  { to: '/agent/settlements', icon: Wallet, label: 'Settlements' },
 ];
 
 const merchantLinks = [
@@ -43,7 +51,7 @@ export function Sidebar({ role }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const links = role === 'admin' ? adminLinks : merchantLinks;
+  const links = role === 'admin' ? adminLinks : role === 'agent' ? agentLinks : merchantLinks;
 
   const handleLogout = async () => {
     await signOut();
@@ -61,7 +69,7 @@ export function Sidebar({ role }: SidebarProps) {
           <div>
             <span className="text-lg font-bold gradient-text">CryptoGate</span>
             <span className="ml-1 text-xs text-muted-foreground">
-              {role === 'admin' ? 'Admin' : 'Portal'}
+              {role === 'admin' ? 'Admin' : role === 'agent' ? 'Agent' : 'Portal'}
             </span>
           </div>
         </div>

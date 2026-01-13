@@ -3,13 +3,14 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
-type UserRole = 'admin' | 'merchant' | null;
+type UserRole = 'admin' | 'merchant' | 'agent' | null;
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: UserRole;
   merchantId: string | null;
+  agentId: string | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [merchantId, setMerchantId] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserRole = async (userId: string) => {
@@ -37,6 +39,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (adminRole) {
       setRole('admin');
       setMerchantId(null);
+      setAgentId(null);
+      return;
+    }
+
+    // Check for agent role
+    const { data: agentRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'agent')
+      .maybeSingle();
+
+    if (agentRole) {
+      setRole('agent');
+      setMerchantId(null);
+      
+      // Get agent ID
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      setAgentId(agent?.id || null);
       return;
     }
 
@@ -50,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (merchantRole) {
       setRole('merchant');
+      setAgentId(null);
       
       // Get merchant ID
       const { data: merchantUser } = await supabase
@@ -62,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setRole(null);
       setMerchantId(null);
+      setAgentId(null);
     }
   };
 
@@ -119,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setRole(null);
     setMerchantId(null);
+    setAgentId(null);
   };
 
   return (
@@ -127,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       role,
       merchantId,
+      agentId,
       isLoading,
       signIn,
       signUp,

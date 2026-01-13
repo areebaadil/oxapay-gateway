@@ -123,3 +123,53 @@ export function useProcessSettlement() {
     },
   });
 }
+
+export function useCompleteSettlement() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ settlementId, txHash }: { settlementId: string; txHash: string }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-settlement`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            settlementId,
+            action: 'complete',
+            txHash,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to complete settlement');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settlements'] });
+      queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });
+      toast({
+        title: 'Settlement completed',
+        description: 'The settlement has been marked as completed.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}

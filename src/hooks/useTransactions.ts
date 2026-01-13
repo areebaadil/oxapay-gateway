@@ -92,3 +92,52 @@ export function useTransactionStats(merchantId?: string) {
     },
   });
 }
+
+export function useDailyTransactionStats(merchantId?: string) {
+  return useQuery({
+    queryKey: ['daily-transaction-stats', merchantId, new Date().toISOString().split('T')[0]],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const startOfDay = `${today}T00:00:00.000Z`;
+      const endOfDay = `${today}T23:59:59.999Z`;
+
+      let query = supabase
+        .from('transactions')
+        .select('status, usd_value, coin, crypto_amount, created_at')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay);
+
+      if (merchantId) {
+        query = query.eq('merchant_id', merchantId);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+
+      const transactions = data || [];
+      const confirmed = transactions.filter(tx => 
+        tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
+      );
+      const pending = transactions.filter(tx => tx.status === 'PENDING');
+      const failed = transactions.filter(tx => tx.status === 'FAILED' || tx.status === 'EXPIRED');
+
+      return {
+        date: today,
+        totalTransactions: transactions.length,
+        confirmedTransactions: confirmed.length,
+        pendingTransactions: pending.length,
+        failedTransactions: failed.length,
+        totalVolume: confirmed.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
+        pendingVolume: pending.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
+        volumeByCoin: Object.entries(
+          transactions.reduce((acc, tx) => {
+            acc[tx.coin] = (acc[tx.coin] || 0) + Number(tx.usd_value);
+            return acc;
+          }, {} as Record<string, number>)
+        ).map(([coin, usdVolume]) => ({ coin, usdVolume })),
+      };
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+}

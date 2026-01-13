@@ -56,6 +56,13 @@ export default function Merchants() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; merchant: typeof merchants extends (infer T)[] ? T : never } | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    webhook_url: '',
+    fee_percentage: '1.5',
+  });
   const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -149,6 +156,34 @@ export default function Merchants() {
 
   const handleToggleStatus = (id: string, currentStatus: boolean) => {
     updateMerchant.mutate({ id, is_enabled: !currentStatus });
+  };
+
+  const handleOpenEdit = (merchant: NonNullable<typeof merchants>[number]) => {
+    setEditFormData({
+      name: merchant.name,
+      email: merchant.email,
+      webhook_url: merchant.webhook_url || '',
+      fee_percentage: String(merchant.fee_percentage),
+    });
+    setEditDialog({ open: true, merchant });
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDialog?.merchant) return;
+    
+    updateMerchant.mutate({
+      id: editDialog.merchant.id,
+      name: editFormData.name,
+      email: editFormData.email,
+      webhook_url: editFormData.webhook_url || null,
+      fee_percentage: parseFloat(editFormData.fee_percentage),
+    }, {
+      onSuccess: () => {
+        setEditDialog(null);
+        toast({ title: 'Merchant updated', description: 'Details saved successfully.' });
+      }
+    });
   };
 
   const handleGenerateKey = async (merchantId: string) => {
@@ -331,7 +366,7 @@ export default function Merchants() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenEdit(merchant)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Details
                       </DropdownMenuItem>
@@ -529,6 +564,67 @@ export default function Merchants() {
                 {generatedKey ? 'Done' : 'Close'}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Merchant Dialog */}
+        <Dialog open={editDialog?.open || false} onOpenChange={(open) => !open && setEditDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Merchant Details</DialogTitle>
+              <DialogDescription>
+                Update information for {editDialog?.merchant?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Business Name</Label>
+                <Input 
+                  id="edit-name" 
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email Address</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email" 
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-webhook">Webhook URL (optional)</Label>
+                <Input 
+                  id="edit-webhook" 
+                  placeholder="https://example.com/webhooks"
+                  value={editFormData.webhook_url}
+                  onChange={(e) => setEditFormData({ ...editFormData, webhook_url: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-fee">Fee Percentage</Label>
+                <Input 
+                  id="edit-fee" 
+                  type="number" 
+                  step="0.1" 
+                  value={editFormData.fee_percentage}
+                  onChange={(e) => setEditFormData({ ...editFormData, fee_percentage: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setEditDialog(null)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1" disabled={updateMerchant.isPending}>
+                  {updateMerchant.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
 

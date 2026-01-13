@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,6 +14,8 @@ import {
   Book,
   Webhook
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   role: 'admin' | 'merchant';
@@ -39,7 +41,14 @@ const merchantLinks = [
 
 export function Sidebar({ role }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
   const links = role === 'admin' ? adminLinks : merchantLinks;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-sidebar-border bg-sidebar">
@@ -87,22 +96,24 @@ export function Sidebar({ role }: SidebarProps) {
           })}
         </nav>
 
-        {/* Settings & Logout */}
-        <div className="border-t border-sidebar-border p-4 space-y-1">
-          <Link
-            to={`/${role}/settings`}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+        {/* User Info & Logout */}
+        <div className="border-t border-sidebar-border p-4 space-y-3">
+          {user && (
+            <div className="px-3 py-2">
+              <p className="text-xs text-muted-foreground">Signed in as</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {user.email}
+              </p>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="h-5 w-5" />
-            Logout
-          </Link>
+            Sign Out
+          </Button>
         </div>
       </div>
     </aside>

@@ -7,7 +7,8 @@ export interface Merchant {
   name: string;
   email: string;
   webhook_url: string | null;
-  fee_percentage: number;
+  deposit_fee_percentage: number;
+  withdrawal_fee_percentage: number;
   is_enabled: boolean;
   created_at: string;
   updated_at: string;

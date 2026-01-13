@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Merchants from "./pages/admin/Merchants";
 import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminLedger from "./pages/admin/AdminLedger";
 import Settlements from "./pages/admin/Settlements";
 import ApiDocs from "./pages/admin/ApiDocs";
 import WebhookLogs from "./pages/admin/WebhookLogs";
@@ -51,6 +52,11 @@ const App = () => (
             <Route path="/admin/settlements" element={
               <ProtectedRoute requiredRole="admin">
                 <Settlements />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/ledger" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminLedger />
               </ProtectedRoute>
             } />
             <Route path="/admin/api-docs" element={

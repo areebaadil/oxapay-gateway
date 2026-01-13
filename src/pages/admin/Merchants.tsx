@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useMerchants, useCreateMerchant, useUpdateMerchant } from '@/hooks/useMerchants';
+import { useMerchants, useUpdateMerchant } from '@/hooks/useMerchants';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useApiKeys, useGenerateApiKey, useRevokeApiKey } from '@/hooks/useApiKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,18 +46,23 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Merchants() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     webhook_url: '',
     fee_percentage: '1.5',
   });
@@ -65,7 +70,6 @@ export default function Merchants() {
   const { data: merchants, isLoading } = useMerchants();
   const { data: transactions } = useTransactions();
   const { data: allApiKeys } = useApiKeys();
-  const createMerchant = useCreateMerchant();
   const updateMerchant = useUpdateMerchant();
   const generateApiKey = useGenerateApiKey();
   const revokeApiKey = useRevokeApiKey();
@@ -88,19 +92,59 @@ export default function Merchants() {
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createMerchant.mutate({
-      name: formData.name,
-      email: formData.email,
-      webhook_url: formData.webhook_url || undefined,
-      fee_percentage: parseFloat(formData.fee_percentage),
-    }, {
-      onSuccess: () => {
-        setIsCreateOpen(false);
-        setFormData({ name: '', email: '', webhook_url: '', fee_percentage: '1.5' });
+    setIsSubmitting(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
+        return;
       }
-    });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-merchant-with-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            webhook_url: formData.webhook_url || null,
+            fee_percentage: parseFloat(formData.fee_percentage),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create merchant');
+      }
+
+      toast({
+        title: 'Merchant created',
+        description: `Login: ${formData.email} / ${formData.password}`,
+      });
+      
+      setIsCreateOpen(false);
+      setFormData({ name: '', email: '', password: '', webhook_url: '', fee_percentage: '1.5' });
+      // Refresh merchants list
+      queryClient.invalidateQueries({ queryKey: ['merchants'] });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create merchant',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleToggleStatus = (id: string, currentStatus: boolean) => {
@@ -186,13 +230,31 @@ export default function Merchants() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="webhook">Webhook URL</Label>
+                  <Label htmlFor="password">Initial Password</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Merchant will use this to login. Min 6 characters.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="webhook">Webhook URL (optional)</Label>
                   <Input 
                     id="webhook" 
                     placeholder="https://acme.com/webhooks"
                     value={formData.webhook_url}
                     onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Receives notifications for transactions, settlements, etc.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fee">Fee Percentage</Label>
@@ -210,8 +272,8 @@ export default function Merchants() {
                   <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="flex-1">
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={createMerchant.isPending}>
-                    {createMerchant.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Merchant'}
+                  <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Merchant'}
                   </Button>
                 </div>
               </form>

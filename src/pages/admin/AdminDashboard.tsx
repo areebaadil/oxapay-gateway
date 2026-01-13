@@ -1,10 +1,11 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/ui/StatCard';
+import { DailyStatsCard } from '@/components/ui/DailyStatsCard';
 import { VolumeChart } from '@/components/charts/VolumeChart';
 import { CoinDistributionChart } from '@/components/charts/CoinDistributionChart';
 import { TransactionsTable } from '@/components/tables/TransactionsTable';
 import { useMerchants } from '@/hooks/useMerchants';
-import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
+import { useTransactions, useTransactionStats, useDailyTransactionStats } from '@/hooks/useTransactions';
 import { useSettlements } from '@/hooks/useSettlements';
 import { 
   DollarSign, 
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   const { data: merchants, isLoading: merchantsLoading } = useMerchants();
   const { data: transactions, isLoading: txLoading } = useTransactions();
   const { data: stats, isLoading: statsLoading } = useTransactionStats();
+  const { data: dailyStats, isLoading: dailyLoading } = useDailyTransactionStats();
   const { data: settlements } = useSettlements('PENDING');
 
   const recentTransactions = transactions?.slice(0, 5) || [];
@@ -88,6 +90,18 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout role="admin" title="Dashboard">
       <div className="space-y-6">
+        {/* Daily Stats Card */}
+        <DailyStatsCard
+          date={dailyStats?.date || new Date().toISOString().split('T')[0]}
+          totalTransactions={dailyStats?.totalTransactions || 0}
+          confirmedTransactions={dailyStats?.confirmedTransactions || 0}
+          pendingTransactions={dailyStats?.pendingTransactions || 0}
+          failedTransactions={dailyStats?.failedTransactions || 0}
+          totalVolume={dailyStats?.totalVolume || 0}
+          pendingVolume={dailyStats?.pendingVolume || 0}
+          isLoading={dailyLoading}
+        />
+
         {/* Welcome Banner */}
         <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-r from-card via-card to-primary/5 p-6">
           <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-primary/10 to-transparent" />

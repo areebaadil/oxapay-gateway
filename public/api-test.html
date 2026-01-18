@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant API Test Console</title>
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #141417;
+      --bg-tertiary: #1c1c21;
+      --border: #2a2a30;
+      --text-primary: #f4f4f5;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .config-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .config-section h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select, textarea {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: var(--bg-tertiary);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h3 {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .endpoint-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .endpoint-btn:hover {
+      border-color: var(--accent);
+      background: var(--bg-primary);
+    }
+
+    .endpoint-btn.active {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .method-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .method-GET { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+    .method-POST { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+
+    .endpoint-path {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .endpoint-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .request-form {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .request-form.active {
+      display: flex;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-primary);
+    }
+
+    .response-panel {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .response-meta {
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .response-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .status-2xx { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+    .status-4xx { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .status-5xx { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+    .response-body {
+      flex: 1;
+      padding: 16px;
+      overflow: auto;
+      background: var(--bg-primary);
+      min-height: 400px;
+    }
+
+    .response-body pre {
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .json-key { color: #7dd3fc; }
+    .json-string { color: #86efac; }
+    .json-number { color: #fcd34d; }
+    .json-boolean { color: #c4b5fd; }
+    .json-null { color: #fb7185; }
+
+    .workflow-section {
+      margin-top: 24px;
+    }
+
+    .workflow-section h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .workflow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .workflow-step {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .step-content code {
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-tertiary);
+      padding: 4px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+    }
+
+    .tab.active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .hosted-page-link {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: var(--success);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .hosted-page-link:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔧 Merchant API Test Console</h1>
+      <p>Test the Merchant API endpoints and deposit workflow</p>
+    </header>
+
+    <div class="config-section">
+      <h2>Configuration</h2>
+      <div class="config-grid">
+        <div class="form-group">
+          <label>Supabase URL</label>
+          <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co" />
+        </div>
+        <div class="form-group">
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="Your merchant API key" />
+        </div>
+        <div class="form-group">
+          <label>Merchant ID (for direct deposit intent)</label>
+          <input type="text" id="merchantId" placeholder="UUID of merchant" />
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="api">API Testing</button>
+      <button class="tab" data-tab="deposit">Deposit Flow</button>
+      <button class="tab" data-tab="webhook">Webhook Simulator</button>
+    </div>
+
+    <!-- API Testing Tab -->
+    <div id="tab-api" class="tab-content">
+      <div class="main-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Endpoints</h3>
+          </div>
+          <div class="panel-body">
+            <div class="endpoint-list">
+              <button class="endpoint-btn" data-endpoint="getMerchantInfo">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/info</div>
+                  <div class="endpoint-desc">Get merchant information</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="getBalance">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/balance</div>
+                  <div class="endpoint-desc">Get merchant balance by coin</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="listTransactions">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/transactions</div>
+                  <div class="endpoint-desc">List all transactions</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="getTransaction">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/transactions/:id</div>
+                  <div class="endpoint-desc">Get single transaction details</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="createPayment">
+                <span class="method-badge method-POST">POST</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/payments</div>
+                  <div class="endpoint-desc">Create a new payment</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="getPayment">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/payments/:id</div>
+                  <div class="endpoint-desc">Get payment status</div>
+                </div>
+              </button>
+
+              <button class="endpoint-btn" data-endpoint="listPayments">
+                <span class="method-badge method-GET">GET</span>
+                <div>
+                  <div class="endpoint-path">/merchant-api/payments</div>
+                  <div class="endpoint-desc">List all payments</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Dynamic Request Forms -->
+            <div id="form-getTransaction" class="request-form">
+              <div class="form-group">
+                <label>Transaction ID</label>
+                <input type="text" id="txId" placeholder="Transaction UUID" />
+              </div>
+            </div>
+
+            <div id="form-getPayment" class="request-form">
+              <div class="form-group">
+                <label>Payment ID</label>
+                <input type="text" id="paymentId" placeholder="Payment UUID" />
+              </div>
+            </div>
+
+            <div id="form-createPayment" class="request-form">
+              <div class="form-group">
+                <label>Amount (USD)</label>
+                <input type="number" id="paymentAmount" placeholder="100" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label>Coin</label>
+                <select id="paymentCoin">
+                  <option value="USDT">USDT</option>
+                  <option value="USDC">USDC</option>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="LTC">LTC</option>
+                  <option value="TRX">TRX</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>User Reference</label>
+                <input type="text" id="paymentUserRef" placeholder="order-123 or user-456" />
+              </div>
+              <div class="form-group">
+                <label>Callback URL (optional)</label>
+                <input type="text" id="paymentCallback" placeholder="https://your-site.com/webhook" />
+              </div>
+            </div>
+
+            <div style="padding: 16px; border-top: 1px solid var(--border);">
+              <button class="btn btn-primary" id="sendRequest" disabled>
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel response-panel">
+          <div class="panel-header">
+            <h3>Response</h3>
+            <button class="btn btn-secondary" id="copyResponse" style="padding: 6px 12px; font-size: 11px;">
+              Copy
+            </button>
+          </div>
+          <div class="response-meta" id="responseMeta" style="display: none;">
+            <span>Status: <span class="status-badge" id="responseStatus">-</span></span>
+            <span>Time: <span id="responseTime">-</span></span>
+          </div>
+          <div class="response-body" id="responseBody">
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p>Select an endpoint and send a request</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deposit Flow Tab -->
+    <div id="tab-deposit" class="tab-content" style="display: none;">
+      <div class="main-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Create Deposit Intent</h3>
+          </div>
+          <div class="panel-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group">
+                <label>User Reference</label>
+                <input type="text" id="depositUserRef" placeholder="user-123 or order-456" />
+              </div>
+              <div class="form-group">
+                <label>Coin</label>
+                <select id="depositCoin">
+                  <option value="USDT">USDT (Tron TRC20)</option>
+                  <option value="USDC">USDC</option>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="LTC">LTC</option>
+                  <option value="TRX">TRX</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Expected Amount (in coin)</label>
+                <input type="number" id="depositAmount" placeholder="100" step="0.000001" />
+              </div>
+              <div class="form-group">
+                <label>Callback URL (optional)</label>
+                <input type="text" id="depositCallback" placeholder="https://your-site.com/webhook" />
+              </div>
+              <button class="btn btn-primary" id="createDepositIntent">
+                Create Deposit Intent
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel response-panel">
+          <div class="panel-header">
+            <h3>Deposit Intent Response</h3>
+          </div>
+          <div class="response-body" id="depositResponseBody">
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>Create a deposit intent to get a hosted payment page</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-section">
+        <h2>Deposit Workflow Steps</h2>
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Create Deposit Intent</h4>
+              <p>Call <code>POST /create-deposit-intent</code> with merchant_id, user_reference, coin, and expected_amount. Returns a hosted deposit page URL.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Redirect User</h4>
+              <p>Redirect the user to the <code>hosted_deposit_page_url</code> returned in step 1. User sees the deposit page with QR code and address.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>User Makes Payment</h4>
+              <p>User scans QR code or copies the wallet address and sends crypto from their wallet.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>OxaPay Processes</h4>
+              <p>OxaPay detects the incoming transaction and sends a webhook to <code>/oxapay-webhook</code>.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <h4>Transaction Confirmed</h4>
+              <p>System updates transaction status to CONFIRMED, creates ledger entries, and sends webhook to merchant's callback URL.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Webhook Simulator Tab -->
+    <div id="tab-webhook" class="tab-content" style="display: none;">
+      <div class="main-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Simulate Webhook</h3>
+          </div>
+          <div class="panel-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group">
+                <label>Webhook Type</label>
+                <select id="webhookType">
+                  <option value="payment.waiting">payment.waiting - Payment created</option>
+                  <option value="payment.confirming">payment.confirming - Transaction detected</option>
+                  <option value="payment.confirmed">payment.confirmed - Payment confirmed</option>
+                  <option value="payment.expired">payment.expired - Payment expired</option>
+                  <option value="payment.failed">payment.failed - Payment failed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Track ID (from create-payment)</label>
+                <input type="text" id="webhookTrackId" placeholder="oxapay-track-id" />
+              </div>
+              <div class="form-group">
+                <label>TX Hash (for confirmed)</label>
+                <input type="text" id="webhookTxHash" placeholder="0x..." />
+              </div>
+              <div class="form-group">
+                <label>Webhook Payload (JSON)</label>
+                <textarea id="webhookPayload" rows="10">{
+  "status": "Confirming",
+  "trackId": "your-track-id",
+  "amount": "100",
+  "coin": "USDT",
+  "network": "TRC20",
+  "txID": "transaction-hash",
+  "address": "wallet-address"
+}</textarea>
+              </div>
+              <button class="btn btn-primary" id="sendWebhook">
+                Send Webhook
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel response-panel">
+          <div class="panel-header">
+            <h3>Webhook Response</h3>
+          </div>
+          <div class="response-body" id="webhookResponseBody">
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <p>Simulate OxaPay webhooks to test payment processing</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-section">
+        <h2>Webhook Event Types</h2>
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="step-number">W</div>
+            <div class="step-content">
+              <h4>payment.waiting</h4>
+              <p>Initial state when payment is created. Waiting for user to send crypto to the address.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">C</div>
+            <div class="step-content">
+              <h4>payment.confirming</h4>
+              <p>Transaction detected on blockchain, waiting for confirmations. Transaction status: PENDING.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">✓</div>
+            <div class="step-content">
+              <h4>payment.confirmed</h4>
+              <p>Payment fully confirmed. Transaction status: CONFIRMED. Ledger entries created. Merchant webhook sent.</p>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-number">X</div>
+            <div class="step-content">
+              <h4>payment.expired</h4>
+              <p>Payment window expired without receiving funds. Transaction status: EXPIRED.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedEndpoint = null;
+    let lastResponse = null;
+
+    // DOM Elements
+    const supabaseUrlInput = document.getElementById('supabaseUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const merchantIdInput = document.getElementById('merchantId');
+    const sendRequestBtn = document.getElementById('sendRequest');
+    const responseBody = document.getElementById('responseBody');
+    const responseMeta = document.getElementById('responseMeta');
+    const responseStatus = document.getElementById('responseStatus');
+    const responseTime = document.getElementById('responseTime');
+
+    // Initialize with stored values
+    supabaseUrlInput.value = localStorage.getItem('supabaseUrl') || '';
+    apiKeyInput.value = localStorage.getItem('apiKey') || '';
+    merchantIdInput.value = localStorage.getItem('merchantId') || '';
+
+    // Save config on change
+    [supabaseUrlInput, apiKeyInput, merchantIdInput].forEach(input => {
+      input.addEventListener('change', () => {
+        localStorage.setItem(input.id, input.value);
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+      });
+    });
+
+    // Endpoint selection
+    document.querySelectorAll('.endpoint-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.endpoint-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.request-form').forEach(f => f.classList.remove('active'));
+        
+        btn.classList.add('active');
+        selectedEndpoint = btn.dataset.endpoint;
+        
+        const form = document.getElementById('form-' + selectedEndpoint);
+        if (form) form.classList.add('active');
+        
+        sendRequestBtn.disabled = false;
+      });
+    });
+
+    // Format JSON with syntax highlighting
+    function formatJSON(obj) {
+      const json = JSON.stringify(obj, null, 2);
+      return json.replace(/(".*?")(\s*:\s*)?(".*?"|true|false|null|\d+\.?\d*)?/g, (match, key, colon, value) => {
+        let result = `<span class="json-key">${key}</span>`;
+        if (colon) result += colon;
+        if (value) {
+          if (value.startsWith('"')) {
+            result += `<span class="json-string">${value}</span>`;
+          } else if (value === 'true' || value === 'false') {
+            result += `<span class="json-boolean">${value}</span>`;
+          } else if (value === 'null') {
+            result += `<span class="json-null">${value}</span>`;
+          } else {
+            result += `<span class="json-number">${value}</span>`;
+          }
+        }
+        return result;
+      });
+    }
+
+    // Display response
+    function displayResponse(data, status, time) {
+      lastResponse = data;
+      responseMeta.style.display = 'flex';
+      responseStatus.textContent = status;
+      responseStatus.className = 'status-badge';
+      if (status >= 200 && status < 300) responseStatus.classList.add('status-2xx');
+      else if (status >= 400 && status < 500) responseStatus.classList.add('status-4xx');
+      else responseStatus.classList.add('status-5xx');
+      
+      responseTime.textContent = time + 'ms';
+      
+      let html = `<pre>${formatJSON(data)}</pre>`;
+      
+      // Add hosted page link if available
+      if (data.data?.hosted_deposit_page_url) {
+        html += `<a href="${data.data.hosted_deposit_page_url}" target="_blank" class="hosted-page-link">Open Hosted Deposit Page →</a>`;
+      }
+      
+      responseBody.innerHTML = html;
+    }
+
+    // API Call helper
+    async function apiCall(path, method = 'GET', body = null) {
+      const baseUrl = supabaseUrlInput.value.replace(/\/$/, '');
+      const apiKey = apiKeyInput.value;
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey
+      };
+
+      const startTime = performance.now();
+      
+      try {
+        const response = await fetch(`${baseUrl}/functions/v1${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : null
+        });
+        
+        const endTime = performance.now();
+        const data = await response.json();
+        
+        return { data, status: response.status, time: Math.round(endTime - startTime) };
+      } catch (error) {
+        const endTime = performance.now();
+        return { 
+          data: { error: error.message }, 
+          status: 0, 
+          time: Math.round(endTime - startTime) 
+        };
+      }
+    }
+
+    // Send API Request
+    sendRequestBtn.addEventListener('click', async () => {
+      if (!selectedEndpoint) return;
+      
+      sendRequestBtn.disabled = true;
+      sendRequestBtn.innerHTML = '<span class="loading"></span> Sending...';
+      
+      let result;
+      
+      switch (selectedEndpoint) {
+        case 'getMerchantInfo':
+          result = await apiCall('/merchant-api/info');
+          break;
+        case 'getBalance':
+          result = await apiCall('/merchant-api/balance');
+          break;
+        case 'listTransactions':
+          result = await apiCall('/merchant-api/transactions');
+          break;
+        case 'getTransaction':
+          const txId = document.getElementById('txId').value;
+          result = await apiCall(`/merchant-api/transactions/${txId}`);
+          break;
+        case 'createPayment':
+          result = await apiCall('/merchant-api/payments', 'POST', {
+            amount: parseFloat(document.getElementById('paymentAmount').value),
+            coin: document.getElementById('paymentCoin').value,
+            user_reference: document.getElementById('paymentUserRef').value,
+            callback_url: document.getElementById('paymentCallback').value || undefined
+          });
+          break;
+        case 'getPayment':
+          const paymentId = document.getElementById('paymentId').value;
+          result = await apiCall(`/merchant-api/payments/${paymentId}`);
+          break;
+        case 'listPayments':
+          result = await apiCall('/merchant-api/payments');
+          break;
+      }
+      
+      displayResponse(result.data, result.status, result.time);
+      sendRequestBtn.disabled = false;
+      sendRequestBtn.textContent = 'Send Request';
+    });
+
+    // Create Deposit Intent
+    document.getElementById('createDepositIntent').addEventListener('click', async () => {
+      const btn = document.getElementById('createDepositIntent');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Creating...';
+      
+      const baseUrl = supabaseUrlInput.value.replace(/\/$/, '');
+      const merchantId = merchantIdInput.value;
+      
+      const startTime = performance.now();
+      
+      try {
+        const response = await fetch(`${baseUrl}/functions/v1/create-deposit-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            merchant_id: merchantId,
+            user_reference: document.getElementById('depositUserRef').value,
+            coin: document.getElementById('depositCoin').value,
+            expected_amount: parseFloat(document.getElementById('depositAmount').value),
+            callback_url: document.getElementById('depositCallback').value || undefined
+          })
+        });
+        
+        const endTime = performance.now();
+        const data = await response.json();
+        
+        let html = `<pre>${formatJSON(data)}</pre>`;
+        if (data.data?.hosted_deposit_page_url) {
+          html += `<a href="${data.data.hosted_deposit_page_url}" target="_blank" class="hosted-page-link">Open Hosted Deposit Page →</a>`;
+        }
+        document.getElementById('depositResponseBody').innerHTML = html;
+      } catch (error) {
+        document.getElementById('depositResponseBody').innerHTML = 
+          `<pre>${formatJSON({ error: error.message })}</pre>`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Create Deposit Intent';
+    });
+
+    // Send Webhook
+    document.getElementById('sendWebhook').addEventListener('click', async () => {
+      const btn = document.getElementById('sendWebhook');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Sending...';
+      
+      const baseUrl = supabaseUrlInput.value.replace(/\/$/, '');
+      
+      try {
+        let payload = JSON.parse(document.getElementById('webhookPayload').value);
+        
+        const response = await fetch(`${baseUrl}/functions/v1/oxapay-webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        document.getElementById('webhookResponseBody').innerHTML = 
+          `<pre>${formatJSON(data)}</pre>`;
+      } catch (error) {
+        document.getElementById('webhookResponseBody').innerHTML = 
+          `<pre>${formatJSON({ error: error.message })}</pre>`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Send Webhook';
+    });
+
+    // Copy response
+    document.getElementById('copyResponse').addEventListener('click', () => {
+      if (lastResponse) {
+        navigator.clipboard.writeText(JSON.stringify(lastResponse, null, 2));
+        document.getElementById('copyResponse').textContent = 'Copied!';
+        setTimeout(() => {
+          document.getElementById('copyResponse').textContent = 'Copy';
+        }, 2000);
+      }
+    });
+
+    // Update webhook payload based on type
+    document.getElementById('webhookType').addEventListener('change', (e) => {
+      const type = e.target.value;
+      const trackId = document.getElementById('webhookTrackId').value || 'your-track-id';
+      const txHash = document.getElementById('webhookTxHash').value || '0x...';
+      
+      const payloads = {
+        'payment.waiting': {
+          status: 'Waiting',
+          trackId,
+          amount: '100',
+          coin: 'USDT',
+          network: 'TRC20',
+          address: 'wallet-address'
+        },
+        'payment.confirming': {
+          status: 'Confirming',
+          trackId,
+          amount: '100',
+          coin: 'USDT',
+          network: 'TRC20',
+          txID: txHash,
+          address: 'wallet-address'
+        },
+        'payment.confirmed': {
+          status: 'Paid',
+          trackId,
+          amount: '100',
+          coin: 'USDT',
+          network: 'TRC20',
+          txID: txHash,
+          address: 'wallet-address'
+        },
+        'payment.expired': {
+          status: 'Expired',
+          trackId,
+          amount: '100',
+          coin: 'USDT',
+          network: 'TRC20'
+        },
+        'payment.failed': {
+          status: 'Failed',
+          trackId,
+          amount: '100',
+          coin: 'USDT',
+          network: 'TRC20'
+        }
+      };
+      
+      document.getElementById('webhookPayload').value = JSON.stringify(payloads[type], null, 2);
+    });
+  </script>
+</body>
+</html>

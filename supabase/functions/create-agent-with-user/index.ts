@@ -51,7 +51,15 @@ serve(async (req) => {
       );
     }
 
-    const { name, email, password, max_deposit_fee_percentage, max_withdrawal_fee_percentage } = await req.json();
+    const { 
+      name, 
+      email, 
+      password, 
+      deposit_fee_percentage,
+      withdrawal_fee_percentage,
+      max_deposit_fee_percentage, 
+      max_withdrawal_fee_percentage 
+    } = await req.json();
 
     if (!name || !email || !password) {
       return new Response(
@@ -81,6 +89,8 @@ serve(async (req) => {
         user_id: newUser.user.id,
         name,
         email,
+        deposit_fee_percentage: deposit_fee_percentage || 1.5,
+        withdrawal_fee_percentage: withdrawal_fee_percentage || 1.5,
         max_deposit_fee_percentage: max_deposit_fee_percentage || 5.0,
         max_withdrawal_fee_percentage: max_withdrawal_fee_percentage || 5.0,
       })

@@ -77,6 +77,7 @@ export type Database = {
       agents: {
         Row: {
           created_at: string
+          deposit_fee_percentage: number
           email: string
           id: string
           is_enabled: boolean
@@ -85,9 +86,11 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
+          withdrawal_fee_percentage: number
         }
         Insert: {
           created_at?: string
+          deposit_fee_percentage?: number
           email: string
           id?: string
           is_enabled?: boolean
@@ -96,9 +99,11 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
+          withdrawal_fee_percentage?: number
         }
         Update: {
           created_at?: string
+          deposit_fee_percentage?: number
           email?: string
           id?: string
           is_enabled?: boolean
@@ -107,6 +112,7 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+          withdrawal_fee_percentage?: number
         }
         Relationships: []
       }

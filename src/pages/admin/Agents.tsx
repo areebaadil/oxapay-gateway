@@ -50,6 +50,8 @@ export default function Agents() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
+    deposit_fee_percentage: '1.5',
+    withdrawal_fee_percentage: '1.5',
     max_deposit_fee_percentage: '5',
     max_withdrawal_fee_percentage: '5',
   });
@@ -57,6 +59,8 @@ export default function Agents() {
     name: '',
     email: '',
     password: '',
+    deposit_fee_percentage: '1.5',
+    withdrawal_fee_percentage: '1.5',
     max_deposit_fee_percentage: '5',
     max_withdrawal_fee_percentage: '5',
   });
@@ -92,6 +96,8 @@ export default function Agents() {
             name: formData.name,
             email: formData.email,
             password: formData.password,
+            deposit_fee_percentage: parseFloat(formData.deposit_fee_percentage),
+            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage),
             max_deposit_fee_percentage: parseFloat(formData.max_deposit_fee_percentage),
             max_withdrawal_fee_percentage: parseFloat(formData.max_withdrawal_fee_percentage),
           }),
@@ -110,7 +116,7 @@ export default function Agents() {
       });
       
       setIsCreateOpen(false);
-      setFormData({ name: '', email: '', password: '', max_deposit_fee_percentage: '5', max_withdrawal_fee_percentage: '5' });
+      setFormData({ name: '', email: '', password: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5', max_deposit_fee_percentage: '5', max_withdrawal_fee_percentage: '5' });
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error: unknown) {
       toast({
@@ -131,6 +137,8 @@ export default function Agents() {
     setEditFormData({
       name: agent.name,
       email: agent.email,
+      deposit_fee_percentage: String(agent.deposit_fee_percentage),
+      withdrawal_fee_percentage: String(agent.withdrawal_fee_percentage),
       max_deposit_fee_percentage: String(agent.max_deposit_fee_percentage),
       max_withdrawal_fee_percentage: String(agent.max_withdrawal_fee_percentage),
     });
@@ -145,6 +153,8 @@ export default function Agents() {
       id: editDialog.agent.id,
       name: editFormData.name,
       email: editFormData.email,
+      deposit_fee_percentage: parseFloat(editFormData.deposit_fee_percentage),
+      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage),
       max_deposit_fee_percentage: parseFloat(editFormData.max_deposit_fee_percentage),
       max_withdrawal_fee_percentage: parseFloat(editFormData.max_withdrawal_fee_percentage),
     }, {
@@ -228,33 +238,62 @@ export default function Agents() {
                     Agent will use this to login. Min 6 characters.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max-deposit-fee">Max Deposit Fee %</Label>
-                    <Input 
-                      id="max-deposit-fee" 
-                      type="number" 
-                      step="0.1" 
-                      placeholder="5.0"
-                      value={formData.max_deposit_fee_percentage}
-                      onChange={(e) => setFormData({ ...formData, max_deposit_fee_percentage: e.target.value })}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Maximum fee agent can set for their merchants
-                    </p>
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium mb-3">Platform Fees (What you charge the agent)</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="deposit-fee">Deposit Fee %</Label>
+                      <Input 
+                        id="deposit-fee" 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="1.5"
+                        value={formData.deposit_fee_percentage}
+                        onChange={(e) => setFormData({ ...formData, deposit_fee_percentage: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="withdrawal-fee">Withdrawal Fee %</Label>
+                      <Input 
+                        id="withdrawal-fee" 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="1.5"
+                        value={formData.withdrawal_fee_percentage}
+                        onChange={(e) => setFormData({ ...formData, withdrawal_fee_percentage: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-withdrawal-fee">Max Withdrawal Fee %</Label>
-                    <Input 
-                      id="max-withdrawal-fee" 
-                      type="number" 
-                      step="0.1" 
-                      placeholder="5.0"
-                      value={formData.max_withdrawal_fee_percentage}
-                      onChange={(e) => setFormData({ ...formData, max_withdrawal_fee_percentage: e.target.value })}
-                      required
-                    />
+                </div>
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium mb-3">Max Fee Limits (Agent can set merchant fees up to)</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="max-deposit-fee">Max Deposit Fee %</Label>
+                      <Input 
+                        id="max-deposit-fee" 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="5.0"
+                        value={formData.max_deposit_fee_percentage}
+                        onChange={(e) => setFormData({ ...formData, max_deposit_fee_percentage: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="max-withdrawal-fee">Max Withdrawal Fee %</Label>
+                      <Input 
+                        id="max-withdrawal-fee" 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="5.0"
+                        value={formData.max_withdrawal_fee_percentage}
+                        onChange={(e) => setFormData({ ...formData, max_withdrawal_fee_percentage: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -361,7 +400,11 @@ export default function Agents() {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Percent className="h-4 w-4" />
-                    <span>Max Fees: {agent.max_deposit_fee_percentage}% / {agent.max_withdrawal_fee_percentage}%</span>
+                    <span>Platform Fees: {agent.deposit_fee_percentage}% / {agent.withdrawal_fee_percentage}%</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Percent className="h-4 w-4" />
+                    <span>Max Limits: {agent.max_deposit_fee_percentage}% / {agent.max_withdrawal_fee_percentage}%</span>
                   </div>
                 </div>
 
@@ -419,28 +462,58 @@ export default function Agents() {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-max-deposit-fee">Max Deposit Fee %</Label>
-                <Input 
-                  id="edit-max-deposit-fee" 
-                  type="number" 
-                  step="0.1" 
-                  value={editFormData.max_deposit_fee_percentage}
-                  onChange={(e) => setEditFormData({ ...editFormData, max_deposit_fee_percentage: e.target.value })}
-                  required
-                />
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">Platform Fees</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-deposit-fee">Deposit Fee %</Label>
+                  <Input 
+                    id="edit-deposit-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.deposit_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, deposit_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-withdrawal-fee">Withdrawal Fee %</Label>
+                  <Input 
+                    id="edit-withdrawal-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.withdrawal_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, withdrawal_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-max-withdrawal-fee">Max Withdrawal Fee %</Label>
-                <Input 
-                  id="edit-max-withdrawal-fee" 
-                  type="number" 
-                  step="0.1" 
-                  value={editFormData.max_withdrawal_fee_percentage}
-                  onChange={(e) => setEditFormData({ ...editFormData, max_withdrawal_fee_percentage: e.target.value })}
-                  required
-                />
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">Max Fee Limits</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-max-deposit-fee">Max Deposit Fee %</Label>
+                  <Input 
+                    id="edit-max-deposit-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.max_deposit_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, max_deposit_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-max-withdrawal-fee">Max Withdrawal Fee %</Label>
+                  <Input 
+                    id="edit-max-withdrawal-fee" 
+                    type="number" 
+                    step="0.1" 
+                    value={editFormData.max_withdrawal_fee_percentage}
+                    onChange={(e) => setEditFormData({ ...editFormData, max_withdrawal_fee_percentage: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter className="flex gap-3 pt-4">

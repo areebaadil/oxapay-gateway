@@ -6,6 +6,8 @@ export interface Agent {
   user_id: string;
   name: string;
   email: string;
+  deposit_fee_percentage: number;
+  withdrawal_fee_percentage: number;
   max_deposit_fee_percentage: number;
   max_withdrawal_fee_percentage: number;
   is_enabled: boolean;

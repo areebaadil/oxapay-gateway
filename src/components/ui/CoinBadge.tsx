@@ -32,6 +32,10 @@ const coinConfig: Record<CoinType, { icon: string; className: string }> = {
     icon: '◈',
     className: 'bg-[hsl(0_72%_51%/0.15)] text-[hsl(0_72%_61%)] border-[hsl(0_72%_51%/0.3)]',
   },
+  JAZZCASH: {
+    icon: 'J',
+    className: 'bg-[hsl(348_83%_47%/0.15)] text-[hsl(348_83%_57%)] border-[hsl(348_83%_47%/0.3)]',
+  },
 };
 
 export function CoinBadge({ coin, showIcon = true, className }: CoinBadgeProps) {

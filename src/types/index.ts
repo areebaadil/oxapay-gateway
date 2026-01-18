@@ -2,7 +2,7 @@
 
 export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED' | 'SETTLED';
 
-export type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
+export type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX' | 'JAZZCASH';
 
 export type UserRole = 'admin' | 'merchant' | 'agent';
 

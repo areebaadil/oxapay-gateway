@@ -12,6 +12,7 @@ const COLORS: Record<CoinType, string> = {
   USDC: 'hsl(210, 100%, 50%)',
   LTC: 'hsl(210, 15%, 60%)',
   TRX: 'hsl(0, 72%, 55%)',
+  JAZZCASH: 'hsl(348, 83%, 47%)',
 };
 
 export function CoinDistributionChart({ data }: CoinDistributionChartProps) {

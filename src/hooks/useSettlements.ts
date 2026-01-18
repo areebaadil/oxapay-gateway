@@ -50,7 +50,7 @@ export function useCreateSettlement() {
 
   return useMutation({
     mutationFn: async (settlement: {
-      coin: 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
+      coin: CoinType;
       amount: number;
       usd_value_at_request: number;
       wallet_address: string;

@@ -554,7 +554,7 @@ export type Database = {
       }
     }
     Enums: {
-      coin_type: "BTC" | "ETH" | "USDT" | "USDC" | "LTC" | "TRX"
+      coin_type: "BTC" | "ETH" | "USDT" | "USDC" | "LTC" | "TRX" | "JAZZCASH"
       ledger_category: "DEPOSIT" | "FEE" | "SETTLEMENT" | "PROCESSOR_FEE"
       ledger_entry_type: "CREDIT" | "DEBIT"
       settlement_status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED"
@@ -692,7 +692,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      coin_type: ["BTC", "ETH", "USDT", "USDC", "LTC", "TRX"],
+      coin_type: ["BTC", "ETH", "USDT", "USDC", "LTC", "TRX", "JAZZCASH"],
       ledger_category: ["DEPOSIT", "FEE", "SETTLEMENT", "PROCESSOR_FEE"],
       ledger_entry_type: ["CREDIT", "DEBIT"],
       settlement_status: ["PENDING", "APPROVED", "REJECTED", "COMPLETED"],

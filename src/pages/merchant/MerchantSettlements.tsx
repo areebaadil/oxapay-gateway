@@ -39,7 +39,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
+type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX' | 'JAZZCASH';
+
+const ALL_COINS: CoinType[] = ['BTC', 'ETH', 'USDT', 'USDC', 'LTC', 'TRX', 'JAZZCASH'];
 
 export default function MerchantSettlements() {
   const { merchantId } = useAuth();
@@ -136,30 +138,29 @@ export default function MerchantSettlements() {
               <div className="space-y-4 py-4">
                 {/* Coin Selection */}
                 <div className="space-y-2">
-                  <Label>Select Coin</Label>
+                  <Label>Select Coin / Payment Method</Label>
                   <Select value={selectedCoin} onValueChange={(v) => setSelectedCoin(v as CoinType)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose cryptocurrency" />
+                      <SelectValue placeholder="Choose cryptocurrency or payment method" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {availableBalances.map(balance => (
-                        <SelectItem key={balance.coin} value={balance.coin}>
-                          <div className="flex items-center gap-2">
-                            <CoinBadge coin={balance.coin as CoinType} />
-                            <span className="text-muted-foreground">
-                              ({balance.balance.toFixed(6)} available)
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-popover z-50">
+                      {ALL_COINS.map(coin => {
+                        const balance = availableBalances.find(b => b.coin === coin)?.balance || 0;
+                        return (
+                          <SelectItem key={coin} value={coin}>
+                            <div className="flex items-center gap-2">
+                              <CoinBadge coin={coin} />
+                              {balance > 0 && (
+                                <span className="text-muted-foreground">
+                                  ({balance.toFixed(6)} available)
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
-                  {availableBalances.length === 0 && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      No available balance for settlement
-                    </p>
-                  )}
                 </div>
 
                 {/* Amount */}

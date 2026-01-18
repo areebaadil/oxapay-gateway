@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shield, ArrowRight, Lock, Mail, Loader2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,28 +12,25 @@ export default function Login() {
   const { signIn, user, role, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [merchantEmail, setMerchantEmail] = useState('');
-  const [merchantPassword, setMerchantPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // Redirect if already logged in
+  // Redirect if already logged in based on role
   useEffect(() => {
     if (user && role) {
       if (role === 'admin') {
         navigate('/admin');
+      } else if (role === 'agent') {
+        navigate('/agent');
       } else if (role === 'merchant') {
         navigate('/merchant');
       }
     }
   }, [user, role, navigate]);
 
-  const handleLogin = async (e: React.FormEvent, type: 'admin' | 'merchant') => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    const email = type === 'admin' ? adminEmail : merchantEmail;
-    const password = type === 'admin' ? adminPassword : merchantPassword;
     
     const { error } = await signIn(email, password);
     
@@ -143,114 +139,54 @@ export default function Login() {
             </p>
           </div>
           
-          <Tabs defaultValue="admin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="admin">Admin</TabsTrigger>
-              <TabsTrigger value="merchant">Merchant</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
             
-            <TabsContent value="admin">
-              <form onSubmit={(e) => handleLogin(e, 'admin')} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      id="admin-email"
-                      type="email"
-                      placeholder="admin@cryptogate.io"
-                      className="pl-10"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      id="admin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-semibold glow-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      Sign in as Admin
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
             
-            <TabsContent value="merchant">
-              <form onSubmit={(e) => handleLogin(e, 'merchant')} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="merchant-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      id="merchant-email"
-                      type="email"
-                      placeholder="merchant@company.com"
-                      className="pl-10"
-                      value={merchantEmail}
-                      onChange={(e) => setMerchantEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="merchant-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      id="merchant-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                      value={merchantPassword}
-                      onChange={(e) => setMerchantPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-semibold glow-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      Sign in as Merchant
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-semibold glow-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
           
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Need access? Contact your{' '}

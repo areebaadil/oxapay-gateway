@@ -39,9 +39,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX' | 'JAZZCASH';
+type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
 
-const ALL_COINS: CoinType[] = ['BTC', 'ETH', 'USDT', 'USDC', 'LTC', 'TRX', 'JAZZCASH'];
+const ALL_COINS: CoinType[] = ['BTC', 'ETH', 'USDT', 'USDC', 'LTC', 'TRX'];
 
 export default function MerchantSettlements() {
   const { merchantId } = useAuth();

@@ -1,33 +1,31 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgent, useAgentMerchants } from '@/hooks/useAgents';
-import { useTransactions } from '@/hooks/useTransactions';
+import { useAgentRevenue } from '@/hooks/useAgentRevenue';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ArrowDownToLine, DollarSign, Loader2, TrendingUp } from 'lucide-react';
+import { Users, ArrowDownToLine, DollarSign, Loader2, TrendingUp, Wallet, PiggyBank, BarChart3 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export default function AgentDashboard() {
   const { agentId } = useAuth();
   const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const { data: agentMerchants, isLoading: merchantsLoading } = useAgentMerchants(agentId);
-  const { data: allTransactions } = useTransactions();
+  const { 
+    totalEarnedRevenue, 
+    totalPotentialRevenue,
+    totalVolume,
+    confirmedVolume,
+    averageDepositMargin,
+    averageWithdrawalMargin,
+    merchantBreakdown,
+    revenueByStatus,
+    isLoading: revenueLoading 
+  } = useAgentRevenue(agentId);
 
-  const isLoading = agentLoading || merchantsLoading;
-
-  // Get merchant IDs for this agent
-  const merchantIds = (agentMerchants || []).map(am => am.merchant_id);
-  
-  // Filter transactions for agent's merchants
-  const transactions = (allTransactions || []).filter(tx => 
-    merchantIds.includes(tx.merchant_id)
-  );
-  
-  const confirmedTxs = transactions.filter(tx => 
-    tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
-  );
-  
-  const totalVolume = confirmedTxs.reduce((sum, tx) => sum + Number(tx.usd_value), 0);
+  const isLoading = agentLoading || merchantsLoading || revenueLoading;
   const merchantCount = agentMerchants?.length || 0;
+  const transactionCount = merchantBreakdown.reduce((sum, m) => sum + m.transactionCount, 0);
 
   if (isLoading) {
     return (
@@ -46,83 +44,150 @@ export default function AgentDashboard() {
         <div>
           <h1 className="text-2xl font-bold">Welcome back, {agent?.name}</h1>
           <p className="text-muted-foreground">
-            Manage your merchants and track their performance
+            Manage your merchants and track your revenue
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Primary Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Earned Revenue"
+            value={`$${totalEarnedRevenue.toFixed(2)}`}
+            icon={PiggyBank}
+            subtitle="From confirmed deposits"
+            iconClassName="bg-green-500/10"
+          />
+          <StatCard
+            title="Total Volume"
+            value={`$${confirmedVolume.toLocaleString()}`}
+            icon={DollarSign}
+            subtitle={`$${totalVolume.toLocaleString()} total processed`}
+          />
           <StatCard
             title="My Merchants"
             value={String(merchantCount)}
             icon={Users}
-            subtitle="Active merchants"
+            subtitle={`${transactionCount} transactions`}
           />
           <StatCard
-            title="Total Transactions"
-            value={String(transactions.length)}
-            icon={ArrowDownToLine}
-            subtitle="All time"
-          />
-          <StatCard
-            title="Total Volume"
-            value={`$${totalVolume.toLocaleString()}`}
-            icon={DollarSign}
-            subtitle="Confirmed deposits"
-          />
-          <StatCard
-            title="Fee Limits"
-            value={`${agent?.max_deposit_fee_percentage}%`}
+            title="Avg. Deposit Margin"
+            value={`${averageDepositMargin.toFixed(2)}%`}
             icon={TrendingUp}
-            subtitle={`Max: ${agent?.max_deposit_fee_percentage}% / ${agent?.max_withdrawal_fee_percentage}%`}
+            subtitle={`Withdrawal: ${averageWithdrawalMargin.toFixed(2)}%`}
           />
         </div>
 
-        {/* Quick Overview */}
+        {/* Revenue Breakdown */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Your Fee Limits</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                Revenue by Status
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Max Deposit Fee</span>
-                <span className="font-semibold">{agent?.max_deposit_fee_percentage}%</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Confirmed</span>
+                  <span className="font-semibold text-green-500">${revenueByStatus.confirmed.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Settled</span>
+                  <span className="font-semibold text-blue-500">${revenueByStatus.settled.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Pending</span>
+                  <span className="font-semibold text-yellow-500">${revenueByStatus.pending.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Max Withdrawal Fee</span>
-                <span className="font-semibold">{agent?.max_withdrawal_fee_percentage}%</span>
+              <div className="pt-4 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total Potential</span>
+                  <span className="font-bold text-lg">${totalPotentialRevenue.toFixed(2)}</span>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground pt-2 border-t">
-                You can set merchant fees up to these limits. The difference between platform rates and your rates is your revenue.
-              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Your Fee Limits
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              {transactions.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No transactions yet. Create merchants to start receiving deposits.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {transactions.slice(0, 5).map(tx => (
-                    <div key={tx.id} className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground truncate">
-                        {tx.user_reference.slice(0, 20)}...
-                      </span>
-                      <span className="font-medium">${Number(tx.usd_value).toFixed(2)}</span>
-                    </div>
-                  ))}
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Max Deposit Fee</span>
+                  <span className="font-semibold">{agent?.max_deposit_fee_percentage}%</span>
                 </div>
-              )}
+                <Progress value={((agent?.max_deposit_fee_percentage || 0) / 10) * 100} className="h-2" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Max Withdrawal Fee</span>
+                  <span className="font-semibold">{agent?.max_withdrawal_fee_percentage}%</span>
+                </div>
+                <Progress value={((agent?.max_withdrawal_fee_percentage || 0) / 10) * 100} className="h-2" />
+              </div>
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                Platform base rate is 1.5%. Your margin is the difference between what you charge merchants and this base rate.
+              </p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Merchant Revenue Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowDownToLine className="h-5 w-5 text-primary" />
+              Merchant Revenue Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {merchantBreakdown.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No merchants yet. Create merchants to start earning revenue.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {merchantBreakdown.map(merchant => (
+                  <div key={merchant.merchantId} className="p-4 rounded-lg border bg-muted/30">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-medium">{merchant.merchantName}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {merchant.transactionCount} transactions
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-500">${merchant.earnedRevenue.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">earned</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Volume</p>
+                        <p className="font-medium">${merchant.confirmedVolume.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Deposit Fee</p>
+                        <p className="font-medium">{merchant.depositFeeSet}% <span className="text-xs text-green-500">(+{merchant.depositMargin}%)</span></p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Withdrawal Fee</p>
+                        <p className="font-medium">{merchant.withdrawalFeeSet}% <span className="text-xs text-green-500">(+{merchant.withdrawalMargin}%)</span></p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

@@ -5,7 +5,6 @@ import { useAgentRevenue } from '@/hooks/useAgentRevenue';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ArrowDownToLine, DollarSign, Loader2, TrendingUp, Wallet, PiggyBank, BarChart3 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 
 export default function AgentDashboard() {
   const { agentId } = useAuth();
@@ -20,6 +19,8 @@ export default function AgentDashboard() {
     averageWithdrawalMargin,
     merchantBreakdown,
     revenueByStatus,
+    agentDepositFee,
+    agentWithdrawalFee,
     isLoading: revenueLoading 
   } = useAgentRevenue(agentId);
 
@@ -114,26 +115,38 @@ export default function AgentDashboard() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
-                Your Fee Limits
+                Your Fee Structure
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Max Deposit Fee</span>
-                  <span className="font-semibold">{agent?.max_deposit_fee_percentage}%</span>
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Platform Fees (What you pay)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Deposit</p>
+                    <p className="text-lg font-bold">{agentDepositFee}%</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Withdrawal</p>
+                    <p className="text-lg font-bold">{agentWithdrawalFee}%</p>
+                  </div>
                 </div>
-                <Progress value={((agent?.max_deposit_fee_percentage || 0) / 10) * 100} className="h-2" />
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Max Withdrawal Fee</span>
-                  <span className="font-semibold">{agent?.max_withdrawal_fee_percentage}%</span>
+              <div className="space-y-3 pt-3 border-t">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max Merchant Fees (Your limits)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Max Deposit</p>
+                    <p className="text-lg font-bold">{agent?.max_deposit_fee_percentage}%</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Max Withdrawal</p>
+                    <p className="text-lg font-bold">{agent?.max_withdrawal_fee_percentage}%</p>
+                  </div>
                 </div>
-                <Progress value={((agent?.max_withdrawal_fee_percentage || 0) / 10) * 100} className="h-2" />
               </div>
               <p className="text-xs text-muted-foreground pt-2 border-t">
-                Platform base rate is 1.5%. Your margin is the difference between what you charge merchants and this base rate.
+                Your margin = Merchant fee - Platform fee. Set merchant fees above your platform fees to earn revenue.
               </p>
             </CardContent>
           </Card>

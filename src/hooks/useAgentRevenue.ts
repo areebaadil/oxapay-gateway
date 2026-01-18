@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
-import { useAgentMerchants } from './useAgents';
+import { useAgent, useAgentMerchants } from './useAgents';
 import { useTransactions } from './useTransactions';
-
-// Platform base rates (what the platform charges)
-const PLATFORM_BASE_DEPOSIT_FEE = 1.5;
-const PLATFORM_BASE_WITHDRAWAL_FEE = 1.5;
 
 export interface MerchantRevenue {
   merchantId: string;
@@ -36,8 +32,13 @@ export interface AgentRevenueStats {
 }
 
 export function useAgentRevenue(agentId: string | null) {
+  const { data: agent, isLoading: agentLoading } = useAgent(agentId);
   const { data: agentMerchants, isLoading: merchantsLoading } = useAgentMerchants(agentId);
   const { data: allTransactions, isLoading: txLoading } = useTransactions();
+
+  // Agent's platform fees (what the platform charges this agent)
+  const agentDepositFee = agent?.deposit_fee_percentage ?? 1.5;
+  const agentWithdrawalFee = agent?.withdrawal_fee_percentage ?? 1.5;
 
   const revenueStats = useMemo<AgentRevenueStats>(() => {
     if (!agentMerchants || !allTransactions) {
@@ -87,8 +88,9 @@ export function useAgentRevenue(agentId: string | null) {
     merchantMap.forEach((merchant, merchantId) => {
       const merchantTxs = agentTransactions.filter(tx => tx.merchant_id === merchantId);
       
-      const depositMargin = merchant.deposit_fee_percentage - PLATFORM_BASE_DEPOSIT_FEE;
-      const withdrawalMargin = merchant.withdrawal_fee_percentage - PLATFORM_BASE_WITHDRAWAL_FEE;
+      // Agent's margin = Merchant fee - Agent's platform fee
+      const depositMargin = merchant.deposit_fee_percentage - agentDepositFee;
+      const withdrawalMargin = merchant.withdrawal_fee_percentage - agentWithdrawalFee;
       
       let merchantVolume = 0;
       let merchantConfirmedVolume = 0;
@@ -153,10 +155,12 @@ export function useAgentRevenue(agentId: string | null) {
       merchantBreakdown: merchantBreakdown.sort((a, b) => b.earnedRevenue - a.earnedRevenue),
       revenueByStatus,
     };
-  }, [agentMerchants, allTransactions]);
+  }, [agentMerchants, allTransactions, agentDepositFee, agentWithdrawalFee]);
 
   return {
     ...revenueStats,
-    isLoading: merchantsLoading || txLoading,
+    agentDepositFee,
+    agentWithdrawalFee,
+    isLoading: agentLoading || merchantsLoading || txLoading,
   };
 }

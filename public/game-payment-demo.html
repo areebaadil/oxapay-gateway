@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoQuest - Buy Gems</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    /* Header */
+    .game-header {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e94560;
+    }
+
+    .game-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #e94560;
+    }
+
+    .game-logo svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .gem-balance {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .gem-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    /* Main Content */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .page-title h1 {
+      font-size: 36px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 50%, #feca57 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    .page-title p {
+      color: #8892b0;
+      font-size: 16px;
+    }
+
+    /* Gem Packages */
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .package-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .package-card:hover {
+      transform: translateY(-5px);
+      border-color: #e94560;
+      box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
+    }
+
+    .package-card.selected {
+      border-color: #e94560;
+      background: rgba(233, 69, 96, 0.1);
+    }
+
+    .package-card.popular::before {
+      content: 'BEST VALUE';
+      position: absolute;
+      top: 15px;
+      right: -30px;
+      background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%);
+      color: #000;
+      padding: 5px 40px;
+      font-size: 10px;
+      font-weight: bold;
+      transform: rotate(45deg);
+    }
+
+    .package-gems {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .package-gems svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .package-gems span {
+      font-size: 32px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .package-name {
+      font-size: 18px;
+      color: #ccd6f6;
+      margin-bottom: 8px;
+    }
+
+    .package-bonus {
+      color: #64ffda;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    .package-price {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .package-price small {
+      font-size: 14px;
+      color: #8892b0;
+    }
+
+    /* Payment Section */
+    .payment-section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .payment-section h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #ccd6f6;
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .payment-method {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .payment-method:hover {
+      border-color: #667eea;
+    }
+
+    .payment-method.selected {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .payment-method svg {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 8px;
+    }
+
+    .payment-method span {
+      display: block;
+      font-size: 12px;
+      color: #8892b0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #8892b0;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-group input::placeholder {
+      color: #4a5568;
+    }
+
+    .buy-button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .buy-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+    }
+
+    .buy-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Payment Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+      border: 2px solid #e94560;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: #8892b0;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: #e94560;
+    }
+
+    .payment-status {
+      margin-bottom: 24px;
+    }
+
+    .status-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-icon.pending {
+      background: rgba(254, 202, 87, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    .status-icon.success {
+      background: rgba(100, 255, 218, 0.2);
+    }
+
+    .status-icon.failed {
+      background: rgba(233, 69, 96, 0.2);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+
+    .qr-code {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .qr-code img {
+      width: 180px;
+      height: 180px;
+    }
+
+    .crypto-address {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+      color: #64ffda;
+    }
+
+    .copy-btn {
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid #667eea;
+      color: #667eea;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .copy-btn:hover {
+      background: #667eea;
+      color: #fff;
+    }
+
+    .payment-amount {
+      font-size: 24px;
+      font-weight: bold;
+      color: #feca57;
+      margin: 16px 0;
+    }
+
+    .payment-timer {
+      color: #8892b0;
+      font-size: 14px;
+    }
+
+    .timer-value {
+      color: #e94560;
+      font-weight: bold;
+    }
+
+    /* Config Panel */
+    .config-panel {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid #e94560;
+      border-radius: 12px;
+      padding: 20px;
+      width: 320px;
+      z-index: 100;
+    }
+
+    .config-panel h3 {
+      color: #e94560;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-panel .form-group {
+      margin-bottom: 12px;
+    }
+
+    .config-panel label {
+      font-size: 12px;
+    }
+
+    .config-panel input {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+
+    .config-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #e94560;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99;
+    }
+
+    .config-toggle svg {
+      width: 24px;
+      height: 24px;
+      fill: #fff;
+    }
+
+    .config-panel.hidden {
+      display: none;
+    }
+
+    /* Success Animation */
+    .gems-animation {
+      display: none;
+    }
+
+    .gems-animation.active {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .gem-particle {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      animation: gemFall 2s ease-out forwards;
+    }
+
+    @keyframes gemFall {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .packages-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-methods {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .config-panel {
+        width: calc(100% - 40px);
+        left: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="game-header">
+    <div class="game-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      CryptoQuest
+    </div>
+    <div class="user-info">
+      <div class="gem-balance">
+        <svg class="gem-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span id="currentGems">1,250</span>
+      </div>
+      <div class="user-avatar">JD</div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    <div class="page-title">
+      <h1>💎 Get More Gems</h1>
+      <p>Power up your adventure with premium gems!</p>
+    </div>
+
+    <!-- Gem Packages -->
+    <div class="packages-grid">
+      <div class="package-card" data-gems="100" data-price="4.99" data-name="Starter Pack">
+        <div class="package-gems">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>100</span>
+        </div>
+        <div class="package-name">Starter Pack</div>
+        <div class="package-bonus"></div>
+        <div class="package-price">$4.99</div>
+      </div>
+
+      <div class="package-card" data-gems="500" data-price="19.99" data-name="Adventure Pack">
+        <div class="package-gems">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>500</span>
+        </div>
+        <div class="package-name">Adventure Pack</div>
+        <div class="package-bonus">+50 Bonus Gems!</div>
+        <div class="package-price">$19.99 <small>Save 20%</small></div>
+      </div>
+
+      <div class="package-card popular selected" data-gems="1200" data-price="39.99" data-name="Hero Pack">
+        <div class="package-gems">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>1,200</span>
+        </div>
+        <div class="package-name">Hero Pack</div>
+        <div class="package-bonus">+200 Bonus Gems!</div>
+        <div class="package-price">$39.99 <small>Save 35%</small></div>
+      </div>
+
+      <div class="package-card" data-gems="2500" data-price="79.99" data-name="Legend Pack">
+        <div class="package-gems">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>2,500</span>
+        </div>
+        <div class="package-name">Legend Pack</div>
+        <div class="package-bonus">+500 Bonus Gems!</div>
+        <div class="package-price">$79.99 <small>Save 40%</small></div>
+      </div>
+
+      <div class="package-card" data-gems="5500" data-price="149.99" data-name="Ultimate Pack">
+        <div class="package-gems">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>5,500</span>
+        </div>
+        <div class="package-name">Ultimate Pack</div>
+        <div class="package-bonus">+1,200 Bonus Gems!</div>
+        <div class="package-price">$149.99 <small>Save 50%</small></div>
+      </div>
+    </div>
+
+    <!-- Payment Section -->
+    <div class="payment-section">
+      <h2>Choose Payment Method</h2>
+      
+      <div class="payment-methods">
+        <div class="payment-method selected" data-coin="USDT">
+          <svg viewBox="0 0 24 24" fill="#26A17B">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            <text x="12" y="14" text-anchor="middle" font-size="6" fill="#fff">₮</text>
+          </svg>
+          <span>USDT</span>
+        </div>
+        <div class="payment-method" data-coin="BTC">
+          <svg viewBox="0 0 24 24" fill="#F7931A">
+            <circle cx="12" cy="12" r="10"/>
+            <text x="12" y="16" text-anchor="middle" font-size="10" fill="#fff">₿</text>
+          </svg>
+          <span>Bitcoin</span>
+        </div>
+        <div class="payment-method" data-coin="ETH">
+          <svg viewBox="0 0 24 24" fill="#627EEA">
+            <circle cx="12" cy="12" r="10"/>
+            <text x="12" y="16" text-anchor="middle" font-size="10" fill="#fff">Ξ</text>
+          </svg>
+          <span>Ethereum</span>
+        </div>
+        <div class="payment-method" data-coin="LTC">
+          <svg viewBox="0 0 24 24" fill="#BFBBBB">
+            <circle cx="12" cy="12" r="10"/>
+            <text x="12" y="16" text-anchor="middle" font-size="10" fill="#fff">Ł</text>
+          </svg>
+          <span>Litecoin</span>
+        </div>
+        <div class="payment-method" data-coin="TRX">
+          <svg viewBox="0 0 24 24" fill="#EF0027">
+            <circle cx="12" cy="12" r="10"/>
+            <text x="12" y="16" text-anchor="middle" font-size="8" fill="#fff">T</text>
+          </svg>
+          <span>TRON</span>
+        </div>
+        <div class="payment-method" data-coin="USDC">
+          <svg viewBox="0 0 24 24" fill="#2775CA">
+            <circle cx="12" cy="12" r="10"/>
+            <text x="12" y="16" text-anchor="middle" font-size="8" fill="#fff">$</text>
+          </svg>
+          <span>USDC</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Player ID / Email</label>
+        <input type="text" id="playerId" placeholder="Enter your player ID or email">
+      </div>
+
+      <button class="buy-button" id="buyButton">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span id="buyButtonText">Purchase 1,200 Gems for $39.99</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Payment Modal -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      
+      <div class="payment-status" id="paymentStatus">
+        <div class="status-icon pending" id="statusIcon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#feca57" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h3 id="statusTitle">Awaiting Payment</h3>
+        <p id="statusMessage">Send the exact amount to the address below</p>
+      </div>
+
+      <div id="paymentDetails">
+        <div class="qr-code" id="qrCodeContainer">
+          <img id="qrCode" src="" alt="QR Code">
+        </div>
+
+        <div class="payment-amount" id="paymentAmount">0.00 USDT</div>
+
+        <div class="crypto-address" id="cryptoAddress">Loading...</div>
+
+        <button class="copy-btn" onclick="copyAddress()">
+          📋 Copy Address
+        </button>
+
+        <div class="payment-timer">
+          Payment expires in: <span class="timer-value" id="paymentTimer">60:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gems Animation -->
+  <div class="gems-animation" id="gemsAnimation"></div>
+
+  <!-- Config Toggle Button -->
+  <button class="config-toggle" id="configToggle" onclick="toggleConfig()">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  </button>
+
+  <!-- Config Panel -->
+  <div class="config-panel hidden" id="configPanel">
+    <h3>⚙️ API Configuration</h3>
+    <div class="form-group">
+      <label>API Endpoint</label>
+      <input type="text" id="apiEndpoint" value="https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api">
+    </div>
+    <div class="form-group">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="Enter your merchant API key">
+    </div>
+    <div class="form-group">
+      <label>Webhook URL (for testing)</label>
+      <input type="text" id="webhookUrl" placeholder="https://your-server.com/webhook">
+    </div>
+    <button class="buy-button" style="padding: 10px; font-size: 14px;" onclick="saveConfig()">
+      Save Configuration
+    </button>
+  </div>
+
+  <script>
+    // State
+    let selectedPackage = { gems: 1200, price: 39.99, name: 'Hero Pack' };
+    let selectedCoin = 'USDT';
+    let paymentCheckInterval = null;
+    let timerInterval = null;
+    let currentPaymentId = null;
+
+    // Config
+    const config = {
+      apiEndpoint: localStorage.getItem('gameApiEndpoint') || 'https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api',
+      apiKey: localStorage.getItem('gameApiKey') || '',
+      webhookUrl: localStorage.getItem('gameWebhookUrl') || ''
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('apiEndpoint').value = config.apiEndpoint;
+      document.getElementById('apiKey').value = config.apiKey;
+      document.getElementById('webhookUrl').value = config.webhookUrl;
+
+      // Package selection
+      document.querySelectorAll('.package-card').forEach(card => {
+        card.addEventListener('click', () => selectPackage(card));
+      });
+
+      // Payment method selection
+      document.querySelectorAll('.payment-method').forEach(method => {
+        method.addEventListener('click', () => selectPaymentMethod(method));
+      });
+
+      // Buy button
+      document.getElementById('buyButton').addEventListener('click', initiatePurchase);
+    });
+
+    function selectPackage(card) {
+      document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      
+      selectedPackage = {
+        gems: parseInt(card.dataset.gems),
+        price: parseFloat(card.dataset.price),
+        name: card.dataset.name
+      };
+
+      updateBuyButton();
+    }
+
+    function selectPaymentMethod(method) {
+      document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+      method.classList.add('selected');
+      selectedCoin = method.dataset.coin;
+    }
+
+    function updateBuyButton() {
+      document.getElementById('buyButtonText').textContent = 
+        `Purchase ${selectedPackage.gems.toLocaleString()} Gems for $${selectedPackage.price}`;
+    }
+
+    async function initiatePurchase() {
+      const playerId = document.getElementById('playerId').value.trim();
+      if (!playerId) {
+        alert('Please enter your Player ID or Email');
+        return;
+      }
+
+      if (!config.apiKey) {
+        alert('Please configure your API key in the settings panel');
+        toggleConfig();
+        return;
+      }
+
+      const btn = document.getElementById('buyButton');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Processing...';
+
+      try {
+        const response = await fetch(`${config.apiEndpoint}/payments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey}`
+          },
+          body: JSON.stringify({
+            user_reference: playerId,
+            coin: selectedCoin,
+            expected_amount: selectedPackage.price,
+            callback_url: config.webhookUrl || undefined,
+            metadata: {
+              package_name: selectedPackage.name,
+              gems: selectedPackage.gems
+            }
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          showPaymentModal(data.data);
+        } else {
+          throw new Error(data.error || 'Failed to create payment');
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert(`Payment Error: ${error.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 
+          `Purchase ${selectedPackage.gems.toLocaleString()} Gems for $${selectedPackage.price}`;
+      }
+    }
+
+    function showPaymentModal(paymentData) {
+      currentPaymentId = paymentData.payment_id || paymentData.deposit_intent_id;
+      
+      // Update modal content
+      document.getElementById('qrCode').src = paymentData.qr_code || 
+        `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${paymentData.address}`;
+      document.getElementById('cryptoAddress').textContent = paymentData.address;
+      document.getElementById('paymentAmount').textContent = 
+        `${paymentData.amount || paymentData.expected_amount} ${selectedCoin}`;
+
+      // Show modal
+      document.getElementById('paymentModal').classList.add('active');
+
+      // Start timer
+      startPaymentTimer(paymentData.expires_at);
+
+      // Start status polling
+      startStatusPolling(currentPaymentId);
+    }
+
+    function startPaymentTimer(expiresAt) {
+      const updateTimer = () => {
+        const now = new Date();
+        const expires = new Date(expiresAt);
+        const diff = Math.max(0, expires - now);
+        
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        
+        document.getElementById('paymentTimer').textContent = 
+          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (diff <= 0) {
+          clearInterval(timerInterval);
+          handlePaymentExpired();
+        }
+      };
+
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function startStatusPolling(paymentId) {
+      const checkStatus = async () => {
+        try {
+          const response = await fetch(`${config.apiEndpoint}/payments/${paymentId}`, {
+            headers: {
+              'Authorization': `Bearer ${config.apiKey}`
+            }
+          });
+
+          const data = await response.json();
+          
+          if (data.success && data.data) {
+            const status = data.data.status;
+            
+            if (status === 'CONFIRMED' || status === 'SETTLED') {
+              handlePaymentSuccess();
+            } else if (status === 'FAILED' || status === 'EXPIRED') {
+              handlePaymentFailed();
+            }
+          }
+        } catch (error) {
+          console.error('Status check error:', error);
+        }
+      };
+
+      paymentCheckInterval = setInterval(checkStatus, 5000);
+    }
+
+    function handlePaymentSuccess() {
+      clearInterval(paymentCheckInterval);
+      clearInterval(timerInterval);
+
+      const statusIcon = document.getElementById('statusIcon');
+      statusIcon.className = 'status-icon success';
+      statusIcon.innerHTML = `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      `;
+
+      document.getElementById('statusTitle').textContent = 'Payment Successful!';
+      document.getElementById('statusMessage').textContent = 
+        `${selectedPackage.gems.toLocaleString()} gems have been added to your account!`;
+      document.getElementById('paymentDetails').style.display = 'none';
+
+      // Update gem balance
+      const currentGems = parseInt(document.getElementById('currentGems').textContent.replace(/,/g, ''));
+      document.getElementById('currentGems').textContent = 
+        (currentGems + selectedPackage.gems).toLocaleString();
+
+      // Trigger gems animation
+      triggerGemsAnimation();
+
+      // Close modal after delay
+      setTimeout(closeModal, 3000);
+    }
+
+    function handlePaymentFailed() {
+      clearInterval(paymentCheckInterval);
+      clearInterval(timerInterval);
+
+      const statusIcon = document.getElementById('statusIcon');
+      statusIcon.className = 'status-icon failed';
+      statusIcon.innerHTML = `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      `;
+
+      document.getElementById('statusTitle').textContent = 'Payment Failed';
+      document.getElementById('statusMessage').textContent = 
+        'There was an issue processing your payment. Please try again.';
+      document.getElementById('paymentDetails').style.display = 'none';
+    }
+
+    function handlePaymentExpired() {
+      clearInterval(paymentCheckInterval);
+
+      const statusIcon = document.getElementById('statusIcon');
+      statusIcon.className = 'status-icon failed';
+      statusIcon.innerHTML = `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      `;
+
+      document.getElementById('statusTitle').textContent = 'Payment Expired';
+      document.getElementById('statusMessage').textContent = 
+        'This payment session has expired. Please try again.';
+    }
+
+    function triggerGemsAnimation() {
+      const container = document.getElementById('gemsAnimation');
+      container.classList.add('active');
+      container.innerHTML = '';
+
+      for (let i = 0; i < 30; i++) {
+        const gem = document.createElement('div');
+        gem.className = 'gem-particle';
+        gem.style.left = `${Math.random() * 100}%`;
+        gem.style.animationDelay = `${Math.random() * 0.5}s`;
+        gem.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+        `;
+        container.appendChild(gem);
+      }
+
+      setTimeout(() => {
+        container.classList.remove('active');
+        container.innerHTML = '';
+      }, 2500);
+    }
+
+    function closeModal() {
+      clearInterval(paymentCheckInterval);
+      clearInterval(timerInterval);
+      
+      document.getElementById('paymentModal').classList.remove('active');
+      
+      // Reset modal state
+      const statusIcon = document.getElementById('statusIcon');
+      statusIcon.className = 'status-icon pending';
+      statusIcon.innerHTML = `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#feca57" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      `;
+      document.getElementById('statusTitle').textContent = 'Awaiting Payment';
+      document.getElementById('statusMessage').textContent = 'Send the exact amount to the address below';
+      document.getElementById('paymentDetails').style.display = 'block';
+    }
+
+    function copyAddress() {
+      const address = document.getElementById('cryptoAddress').textContent;
+      navigator.clipboard.writeText(address).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+      });
+    }
+
+    function toggleConfig() {
+      const panel = document.getElementById('configPanel');
+      const toggle = document.getElementById('configToggle');
+      panel.classList.toggle('hidden');
+      toggle.style.display = panel.classList.contains('hidden') ? 'flex' : 'none';
+    }
+
+    function saveConfig() {
+      config.apiEndpoint = document.getElementById('apiEndpoint').value.trim();
+      config.apiKey = document.getElementById('apiKey').value.trim();
+      config.webhookUrl = document.getElementById('webhookUrl').value.trim();
+
+      localStorage.setItem('gameApiEndpoint', config.apiEndpoint);
+      localStorage.setItem('gameApiKey', config.apiKey);
+      localStorage.setItem('gameWebhookUrl', config.webhookUrl);
+
+      alert('Configuration saved!');
+      toggleConfig();
+    }
+  </script>
+</body>
+</html>

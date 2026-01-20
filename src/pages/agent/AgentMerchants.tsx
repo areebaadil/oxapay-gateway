@@ -20,7 +20,11 @@ import {
   Pause,
   Play,
   Loader2,
-  Users
+  Users,
+  Lock,
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -72,6 +76,12 @@ export default function AgentMerchants() {
     deposit_fee_percentage: '1.5',
     withdrawal_fee_percentage: '1.5',
   });
+  const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const merchants = (agentMerchants || []).map(am => am.merchant).filter(Boolean);
   
@@ -222,6 +232,100 @@ export default function AgentMerchants() {
         queryClient.invalidateQueries({ queryKey: ['agent-merchants'] });
       }
     });
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwordDialog?.merchantId || !newPassword) return;
+    
+    setIsPasswordUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-merchant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: 'update_password',
+            merchant_id: passwordDialog.merchantId,
+            new_password: newPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update password');
+      }
+
+      toast({ title: 'Password updated', description: 'Merchant password has been changed.' });
+      setPasswordDialog(null);
+      setNewPassword('');
+      setShowNewPassword(false);
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update password',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPasswordUpdating(false);
+    }
+  };
+
+  const handleDeleteMerchant = async () => {
+    if (!deleteDialog?.merchantId) return;
+    
+    setIsDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-merchant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            merchant_id: deleteDialog.merchantId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete merchant');
+      }
+
+      toast({ title: 'Merchant deleted', description: 'The merchant has been removed.' });
+      setDeleteDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['agent-merchants'] });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete merchant',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -399,6 +503,12 @@ export default function AgentMerchants() {
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Details
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setPasswordDialog({ open: true, merchantId: merchant.id, merchantName: merchant.name })}
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        Change Password
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleToggleStatus(merchant.id, merchant.is_enabled)}>
                         {merchant.is_enabled ? (
@@ -412,6 +522,14 @@ export default function AgentMerchants() {
                             Enable
                           </>
                         )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => setDeleteDialog({ open: true, merchantId: merchant.id, merchantName: merchant.name })}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Merchant
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -543,6 +661,80 @@ export default function AgentMerchants() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={passwordDialog?.open || false} onOpenChange={(open) => !open && setPasswordDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for {passwordDialog?.merchantName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input 
+                  id="new-password" 
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => { setPasswordDialog(null); setNewPassword(''); setShowNewPassword(false); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdatePassword} disabled={isPasswordUpdating || newPassword.length < 6}>
+              {isPasswordUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Update Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Merchant
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-semibold">{deleteDialog?.merchantName}</span>? 
+              This will permanently remove the merchant, their user account, and all associated data.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteMerchant} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Delete Merchant
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

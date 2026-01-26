@@ -17,3 +17,24 @@ verify_jwt = false
 
 [functions.webhook-retry]
 verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false
+
+[functions.create-deposit-intent]
+verify_jwt = false
+
+[functions.get-deposit-status]
+verify_jwt = false
+
+[functions.create-agent-with-user]
+verify_jwt = false
+
+[functions.create-merchant-with-user]
+verify_jwt = false
+
+[functions.create-merchant-for-agent]
+verify_jwt = false
+
+[functions.manage-merchant]
+verify_jwt = false

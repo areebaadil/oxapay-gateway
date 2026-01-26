@@ -29,17 +29,18 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    // Get the authenticated user
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
     
-    if (claimsError || !claims?.claims) {
+    if (userError || !userData?.user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claims.claims.sub;
+    const userId = userData.user.id;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user is admin
@@ -90,17 +91,18 @@ serve(async (req) => {
       );
     }
 
-    // Generate API key
+    // Generate API key with format: pk_<8-char-merchant-id>_<64-char-secret>
     const randomBytes = new Uint8Array(32);
     crypto.getRandomValues(randomBytes);
     const secretPart = Array.from(randomBytes)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
     
+    // Key prefix format: pk_<first 8 chars of merchant ID>
     const keyPrefix = `pk_${merchantId.substring(0, 8)}`;
     const fullKey = `${keyPrefix}_${secretPart}`;
 
-    // Hash the key for storage
+    // Hash the key for storage (SHA-256)
     const encoder = new TextEncoder();
     const data = encoder.encode(fullKey);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -142,12 +144,16 @@ serve(async (req) => {
       details: { merchant_id: merchantId, key_prefix: keyPrefix },
     });
 
+    console.log(`API key generated for merchant ${merchantId}, prefix: ${keyPrefix}`);
+
     // Return the full key (only time it's visible)
+    // Use 'apiKey' to match frontend expectations
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          api_key: fullKey,
+          apiKey: fullKey,
+          api_key: fullKey, // For backward compatibility
           key_prefix: keyPrefix,
           merchant_name: merchant.name,
           created_at: apiKey.created_at,

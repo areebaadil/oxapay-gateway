@@ -12,8 +12,24 @@ export async function validateApiKey(apiKey: string): Promise<MerchantContext | 
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // API key format: prefix_secret (e.g., "pk_abc123_secretkey")
-  const keyPrefix = apiKey.substring(0, 12); // First 12 chars as prefix
+  // API key format: pk_<8-char-merchant-id>_<64-char-secret>
+  // Example: pk_abc12345_64hexchars...
+  // Extract prefix by finding the pattern pk_XXXXXXXX (11 chars total)
+  
+  // Validate format
+  if (!apiKey.startsWith("pk_") || apiKey.length < 76) {
+    console.log("Invalid API key format: too short or wrong prefix");
+    return null;
+  }
+
+  // The prefix is "pk_" + 8 chars = 11 characters
+  const keyPrefix = apiKey.substring(0, 11);
+  
+  // Verify the key has the underscore separator after prefix
+  if (apiKey.charAt(11) !== "_") {
+    console.log("Invalid API key format: missing separator after prefix");
+    return null;
+  }
 
   // Hash the full key to compare
   const encoder = new TextEncoder();
@@ -21,6 +37,8 @@ export async function validateApiKey(apiKey: string): Promise<MerchantContext | 
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const keyHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  console.log(`Validating API key with prefix: ${keyPrefix}`);
 
   // Find API key by hash
   const { data: apiKeyRecord, error } = await supabase
@@ -30,20 +48,30 @@ export async function validateApiKey(apiKey: string): Promise<MerchantContext | 
     .eq("is_active", true)
     .maybeSingle();
 
-  if (error || !apiKeyRecord) {
-    console.log("API key not found or error:", error);
+  if (error) {
+    console.error("Database error looking up API key:", error);
+    return null;
+  }
+
+  if (!apiKeyRecord) {
+    console.log("API key not found or inactive");
     return null;
   }
 
   const merchant = apiKeyRecord.merchants as {
     id: string;
     name: string;
-    fee_percentage: number;
+    deposit_fee_percentage: number;
     is_enabled: boolean;
   };
 
-  if (!merchant || !merchant.is_enabled) {
-    console.log("Merchant not found or disabled");
+  if (!merchant) {
+    console.log("No merchant associated with API key");
+    return null;
+  }
+
+  if (!merchant.is_enabled) {
+    console.log("Merchant is disabled");
     return null;
   }
 
@@ -53,10 +81,12 @@ export async function validateApiKey(apiKey: string): Promise<MerchantContext | 
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", apiKeyRecord.id);
 
+  console.log(`API key validated for merchant: ${merchant.name}`);
+
   return {
     merchantId: merchant.id,
     merchantName: merchant.name,
-    feePercentage: merchant.fee_percentage,
+    feePercentage: merchant.deposit_fee_percentage,
     isEnabled: merchant.is_enabled,
   };
 }

@@ -858,14 +858,12 @@
             'Authorization': `Bearer ${config.apiKey}`
           },
           body: JSON.stringify({
-            user_reference: playerId,
-            coin: selectedCoin,
-            expected_amount: selectedPackage.price,
-            callback_url: config.webhookUrl || undefined,
-            metadata: {
-              package_name: selectedPackage.name,
-              gems: selectedPackage.gems
-            }
+            amount: selectedPackage.price,
+            currency: 'USD',
+            pay_currency: selectedCoin,
+            order_id: playerId,
+            description: `${selectedPackage.name} - ${selectedPackage.gems} Gems`,
+            callback_url: config.webhookUrl || undefined
           })
         });
 

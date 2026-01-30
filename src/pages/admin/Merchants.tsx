@@ -87,6 +87,7 @@ export default function Merchants() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const { data: merchants, isLoading } = useMerchantsWithAgents();
   const { data: transactions } = useTransactions();
@@ -383,15 +384,31 @@ export default function Merchants() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Initial Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={6}
-                  />
+                  <div className="relative">
+                    <Input 
+                      id="password" 
+                      type={showCreatePassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    >
+                      {showCreatePassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Merchant will use this to login. Min 6 characters.
                   </p>

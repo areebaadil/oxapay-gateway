@@ -21,7 +21,6 @@ import MerchantLedger from "./pages/merchant/MerchantLedger";
 import MerchantSettlements from "./pages/merchant/MerchantSettlements";
 import MerchantApiKeys from "./pages/merchant/MerchantApiKeys";
 import AgentDashboard from "./pages/agent/AgentDashboard";
-import AgentMerchants from "./pages/agent/AgentMerchants";
 import AgentTransactions from "./pages/agent/AgentTransactions";
 import AgentSettlements from "./pages/agent/AgentSettlements";
 import DepositPage from "./pages/deposit/DepositPage";
@@ -84,11 +83,6 @@ const App = () => (
             <Route path="/agent" element={
               <ProtectedRoute requiredRole="agent">
                 <AgentDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/agent/merchants" element={
-              <ProtectedRoute requiredRole="agent">
-                <AgentMerchants />
               </ProtectedRoute>
             } />
             <Route path="/agent/transactions" element={

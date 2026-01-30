@@ -51,7 +51,15 @@ serve(async (req) => {
       });
     }
 
-    const { name, email, password, webhook_url, deposit_fee_percentage, withdrawal_fee_percentage } = await req.json();
+    const { 
+      name, 
+      email, 
+      password, 
+      webhook_url, 
+      deposit_fee_percentage, 
+      withdrawal_fee_percentage,
+      referral_agent_email 
+    } = await req.json();
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -66,6 +74,32 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
+    }
+
+    // If referral agent email is provided, validate the agent exists and is enabled
+    let agentRecord = null;
+    if (referral_agent_email) {
+      const { data: agent, error: agentError } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("email", referral_agent_email)
+        .single();
+
+      if (agentError || !agent) {
+        return new Response(JSON.stringify({ error: "Referral agent not found with the provided email" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      if (!agent.is_enabled) {
+        return new Response(JSON.stringify({ error: "Referral agent is disabled" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      agentRecord = agent;
     }
 
     // Create merchant record first
@@ -139,9 +173,32 @@ serve(async (req) => {
       });
     }
 
+    // If agent was specified, link merchant to agent
+    if (agentRecord) {
+      const { error: agentMerchantError } = await supabase
+        .from("agent_merchants")
+        .insert({
+          agent_id: agentRecord.id,
+          merchant_id: merchant.id,
+        });
+
+      if (agentMerchantError) {
+        // Rollback
+        await supabase.from("merchant_users").delete().eq("merchant_id", merchant.id);
+        await supabase.from("user_roles").delete().eq("user_id", userId);
+        await supabase.auth.admin.deleteUser(userId);
+        await supabase.from("merchants").delete().eq("id", merchant.id);
+        return new Response(JSON.stringify({ error: agentMerchantError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       merchant,
+      referral_agent: agentRecord ? { id: agentRecord.id, name: agentRecord.name, email: agentRecord.email } : null,
       message: `Merchant created. Login credentials: ${email} / ${password}`
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }

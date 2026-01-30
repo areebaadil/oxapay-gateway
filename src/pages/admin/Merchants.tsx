@@ -78,6 +78,7 @@ export default function Merchants() {
     webhook_url: '',
     deposit_fee_percentage: '1.5',
     withdrawal_fee_percentage: '1.5',
+    referral_agent_email: '',
   });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
@@ -137,6 +138,7 @@ export default function Merchants() {
             webhook_url: formData.webhook_url || null,
             deposit_fee_percentage: parseFloat(formData.deposit_fee_percentage),
             withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage),
+            referral_agent_email: formData.referral_agent_email || null,
           }),
         }
       );
@@ -147,13 +149,17 @@ export default function Merchants() {
         throw new Error(result.error || 'Failed to create merchant');
       }
 
+      const agentInfo = result.referral_agent 
+        ? ` (Referred by: ${result.referral_agent.name})`
+        : '';
+      
       toast({
         title: 'Merchant created',
-        description: `Login: ${formData.email} / ${formData.password}`,
+        description: `Login: ${formData.email} / ${formData.password}${agentInfo}`,
       });
       
       setIsCreateOpen(false);
-      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5' });
+      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5', referral_agent_email: '' });
       // Refresh merchants list
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
     } catch (error: unknown) {
@@ -425,6 +431,19 @@ export default function Merchants() {
                       required
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="referral-agent">Referral Agent Email (optional)</Label>
+                  <Input 
+                    id="referral-agent" 
+                    type="email"
+                    placeholder="agent@example.com"
+                    value={formData.referral_agent_email}
+                    onChange={(e) => setFormData({ ...formData, referral_agent_email: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If this merchant was referred by an agent, enter the agent's email.
+                  </p>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="flex-1">

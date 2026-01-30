@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useMerchants, useUpdateMerchant } from '@/hooks/useMerchants';
+import { useMerchantsWithAgents, useUpdateMerchant } from '@/hooks/useMerchants';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useApiKeys, useGenerateApiKey, useRevokeApiKey } from '@/hooks/useApiKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +28,8 @@ import {
   Trash2,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  UserCheck
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -87,7 +88,7 @@ export default function Merchants() {
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: merchants, isLoading } = useMerchants();
+  const { data: merchants, isLoading } = useMerchantsWithAgents();
   const { data: transactions } = useTransactions();
   const { data: allApiKeys } = useApiKeys();
   const updateMerchant = useUpdateMerchant();
@@ -160,8 +161,8 @@ export default function Merchants() {
       
       setIsCreateOpen(false);
       setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5', referral_agent_email: '' });
-      // Refresh merchants list
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
+      queryClient.invalidateQueries({ queryKey: ['merchants-with-agents'] });
     } catch (error: unknown) {
       toast({
         title: 'Error',
@@ -310,6 +311,7 @@ export default function Merchants() {
       toast({ title: 'Merchant deleted', description: 'The merchant has been removed.' });
       setDeleteDialog(null);
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
+      queryClient.invalidateQueries({ queryKey: ['merchants-with-agents'] });
     } catch (error: unknown) {
       toast({
         title: 'Error',
@@ -592,6 +594,12 @@ export default function Merchants() {
                       <Percent className="h-4 w-4" />
                       <span>Deposit: {merchant.deposit_fee_percentage}% | Withdrawal: {merchant.withdrawal_fee_percentage}%</span>
                     </div>
+                    {merchant.agent && (
+                      <div className="flex items-center gap-2 text-primary">
+                        <UserCheck className="h-4 w-4" />
+                        <span className="truncate">Agent: {merchant.agent.name}</span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* API Key Section */}

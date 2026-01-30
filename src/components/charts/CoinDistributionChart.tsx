@@ -5,10 +5,11 @@ interface CoinDistributionChartProps {
   data: { coin: CoinType; volume: number; usdVolume: number }[];
 }
 
+// Only USDT is supported for new transactions, but keep other colors for historical data display
 const COLORS: Record<CoinType, string> = {
+  USDT: 'hsl(160, 84%, 39%)',
   BTC: 'hsl(43, 96%, 56%)',
   ETH: 'hsl(240, 60%, 60%)',
-  USDT: 'hsl(160, 84%, 39%)',
   USDC: 'hsl(210, 100%, 50%)',
   LTC: 'hsl(210, 15%, 60%)',
   TRX: 'hsl(0, 72%, 55%)',

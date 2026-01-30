@@ -7,7 +7,13 @@ interface CoinBadgeProps {
   className?: string;
 }
 
+// Only USDT is supported, but keep other configs for legacy data display
 const coinConfig: Record<CoinType, { icon: string; className: string }> = {
+  USDT: {
+    icon: '₮',
+    className: 'coin-usdt',
+  },
+  // Legacy coins (for historical data display only)
   BTC: {
     icon: '₿',
     className: 'coin-btc',
@@ -15,10 +21,6 @@ const coinConfig: Record<CoinType, { icon: string; className: string }> = {
   ETH: {
     icon: 'Ξ',
     className: 'coin-eth',
-  },
-  USDT: {
-    icon: '₮',
-    className: 'coin-usdt',
   },
   USDC: {
     icon: '$',

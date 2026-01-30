@@ -54,6 +54,14 @@ serve(async (req) => {
       );
     }
 
+    // Only USDT is supported
+    if (pay_currency.toUpperCase() !== 'USDT') {
+      return new Response(
+        JSON.stringify({ error: "Only USDT is supported for payments" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get deposit intent to verify merchant
     const { data: intent, error: intentError } = await supabase
       .from("deposit_intents")
@@ -71,14 +79,9 @@ serve(async (req) => {
     // Build callback URL for OxaPay webhooks
     const callbackUrl = `${supabaseUrl}/functions/v1/oxapay-webhook`;
 
-    // Map pay_currency to OxaPay network format
+    // Map pay_currency to OxaPay network format - Only USDT TRC20 is supported
     const networkMap: Record<string, string> = {
-      BTC: "Bitcoin",
-      ETH: "ERC20",
       USDT: "TRC20",
-      USDC: "ERC20",
-      LTC: "Litecoin",
-      TRX: "TRC20",
     };
 
     // Create white-label payment via OxaPay API

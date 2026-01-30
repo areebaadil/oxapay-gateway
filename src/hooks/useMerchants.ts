@@ -14,6 +14,14 @@ export interface Merchant {
   updated_at: string;
 }
 
+export interface MerchantWithAgent extends Merchant {
+  agent?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+}
+
 export function useMerchants() {
   return useQuery({
     queryKey: ['merchants'],
@@ -25,6 +33,47 @@ export function useMerchants() {
       
       if (error) throw error;
       return data as Merchant[];
+    },
+  });
+}
+
+export function useMerchantsWithAgents() {
+  return useQuery({
+    queryKey: ['merchants-with-agents'],
+    queryFn: async () => {
+      // Fetch merchants
+      const { data: merchants, error: merchantsError } = await supabase
+        .from('merchants')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (merchantsError) throw merchantsError;
+
+      // Fetch agent_merchants with agent data
+      const { data: agentMerchants, error: agentMerchantsError } = await supabase
+        .from('agent_merchants')
+        .select(`
+          merchant_id,
+          agent:agents(id, name, email)
+        `);
+      
+      if (agentMerchantsError) throw agentMerchantsError;
+
+      // Create a map of merchant_id to agent
+      const merchantAgentMap = new Map<string, { id: string; name: string; email: string }>();
+      for (const am of agentMerchants || []) {
+        if (am.agent) {
+          merchantAgentMap.set(am.merchant_id, am.agent as { id: string; name: string; email: string });
+        }
+      }
+
+      // Combine merchants with their agents
+      const merchantsWithAgents: MerchantWithAgent[] = (merchants || []).map(merchant => ({
+        ...merchant,
+        agent: merchantAgentMap.get(merchant.id) || null,
+      }));
+
+      return merchantsWithAgents;
     },
   });
 }

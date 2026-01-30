@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type TransactionStatus = Database['public']['Enums']['transaction_status'];
@@ -139,5 +140,67 @@ export function useDailyTransactionStats(merchantId?: string) {
       };
     },
     refetchInterval: 60000, // Refetch every minute
+  });
+}
+
+export function useUpdateTransactionStatus() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      transactionId, 
+      status, 
+      txHash 
+    }: { 
+      transactionId: string; 
+      status: TransactionStatus;
+      txHash?: string;
+    }) => {
+      const updateData: { 
+        status: TransactionStatus; 
+        confirmed_at?: string;
+        tx_hash?: string;
+      } = { status };
+      
+      if (status === 'CONFIRMED') {
+        updateData.confirmed_at = new Date().toISOString();
+      }
+      
+      if (txHash) {
+        updateData.tx_hash = txHash;
+      }
+
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', transactionId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-transaction-stats'] });
+      
+      const statusText = variables.status === 'CONFIRMED' ? 'approved' : 
+                         variables.status === 'FAILED' ? 'rejected' : 
+                         variables.status.toLowerCase();
+      
+      toast({
+        title: `Transaction ${statusText}`,
+        description: `Transaction has been ${statusText} successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 }

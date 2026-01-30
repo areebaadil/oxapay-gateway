@@ -182,6 +182,7 @@ export default function AdminTransactions() {
           transactions={tableTransactions}
           showMerchant
           merchantNames={merchantNames}
+          showActions
         />
 
         {/* Pagination placeholder */}

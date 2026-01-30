@@ -19,13 +19,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   Wallet, 
@@ -34,15 +27,11 @@ import {
   CheckCircle, 
   XCircle,
   Loader2,
-  AlertCircle,
   TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { CoinType, SUPPORTED_COIN } from '@/types';
-
-// Only USDT is supported for new settlements
-const ALL_COINS: CoinType[] = [SUPPORTED_COIN];
 
 export default function MerchantSettlements() {
   const { merchantId } = useAuth();
@@ -52,34 +41,29 @@ export default function MerchantSettlements() {
   const createSettlement = useCreateSettlement();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedCoin, setSelectedCoin] = useState<CoinType | ''>('');
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
 
   const ratesMap = exchangeRates?.ratesMap || {};
 
-  const availableBalances = balances?.filter(b => b.balance > 0) || [];
+  // Only show USDT balance
+  const usdtBalance = balances?.find(b => b.coin === SUPPORTED_COIN)?.balance || 0;
 
-  const selectedBalance = selectedCoin 
-    ? availableBalances.find(b => b.coin === selectedCoin)?.balance || 0
-    : 0;
-
-  const usdValue = selectedCoin && amount 
-    ? Number(amount) * (ratesMap[selectedCoin] || 0)
+  const usdValue = amount 
+    ? Number(amount) * (ratesMap[SUPPORTED_COIN] || 1)
     : 0;
 
   const handleSubmit = () => {
-    if (!selectedCoin || !amount || !walletAddress) return;
+    if (!amount || !walletAddress) return;
     
     createSettlement.mutate({
-      coin: selectedCoin,
+      coin: SUPPORTED_COIN,
       amount: Number(amount),
       usd_value_at_request: usdValue,
       wallet_address: walletAddress,
     }, {
       onSuccess: () => {
         setIsDialogOpen(false);
-        setSelectedCoin('');
         setAmount('');
         setWalletAddress('');
       }
@@ -137,31 +121,15 @@ export default function MerchantSettlements() {
               </DialogHeader>
               
               <div className="space-y-4 py-4">
-                {/* Coin Selection */}
-                <div className="space-y-2">
-                  <Label>Select Coin / Payment Method</Label>
-                  <Select value={selectedCoin} onValueChange={(v) => setSelectedCoin(v as CoinType)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose cryptocurrency or payment method" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      {ALL_COINS.map(coin => {
-                        const balance = availableBalances.find(b => b.coin === coin)?.balance || 0;
-                        return (
-                          <SelectItem key={coin} value={coin}>
-                            <div className="flex items-center gap-2">
-                              <CoinBadge coin={coin} />
-                              {balance > 0 && (
-                                <span className="text-muted-foreground">
-                                  ({balance.toFixed(6)} available)
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                {/* USDT Info */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <CoinBadge coin={SUPPORTED_COIN} />
+                  <div>
+                    <p className="font-medium">USDT (TRC-20)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Available: {usdtBalance.toFixed(6)} USDT
+                    </p>
+                  </div>
                 </div>
 
                 {/* Amount */}
@@ -173,29 +141,27 @@ export default function MerchantSettlements() {
                       placeholder="0.00"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="pr-20"
+                      className="pr-16"
                       step="0.000001"
-                      max={selectedBalance}
+                      max={usdtBalance}
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      {selectedCoin || 'COIN'}
+                      USDT
                     </div>
                   </div>
-                  {selectedCoin && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Available: {selectedBalance.toFixed(6)} {selectedCoin}
-                      </span>
-                      <Button 
-                        variant="link" 
-                        size="sm" 
-                        className="h-auto p-0"
-                        onClick={() => setAmount(selectedBalance.toString())}
-                      >
-                        Max
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Max: {usdtBalance.toFixed(6)} USDT
+                    </span>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0"
+                      onClick={() => setAmount(usdtBalance.toString())}
+                    >
+                      Use Max
+                    </Button>
+                  </div>
                   {usdValue > 0 && (
                     <p className="text-sm text-muted-foreground">
                       ≈ ${usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
@@ -205,12 +171,15 @@ export default function MerchantSettlements() {
 
                 {/* Wallet Address */}
                 <div className="space-y-2">
-                  <Label>Wallet Address</Label>
+                  <Label>TRC-20 Wallet Address</Label>
                   <Input
-                    placeholder={`Enter your ${selectedCoin || 'crypto'} wallet address`}
+                    placeholder="Enter your TRC-20 USDT wallet address"
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Make sure to use a valid TRC-20 compatible address
+                  </p>
                 </div>
               </div>
 
@@ -221,11 +190,10 @@ export default function MerchantSettlements() {
                 <Button 
                   onClick={handleSubmit}
                   disabled={
-                    !selectedCoin || 
                     !amount || 
                     !walletAddress || 
                     Number(amount) <= 0 || 
-                    Number(amount) > selectedBalance ||
+                    Number(amount) > usdtBalance ||
                     createSettlement.isPending
                   }
                 >
@@ -255,34 +223,19 @@ export default function MerchantSettlements() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {availableBalances.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {availableBalances.map(balance => (
-                  <div 
-                    key={balance.coin}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/20"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CoinBadge coin={balance.coin as CoinType} />
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono font-semibold">
-                        {balance.balance.toFixed(6)}
-                      </p>
-                      <p className="text-sm text-muted-foreground font-mono">
-                        ≈ ${(balance.balance * (ratesMap[balance.coin] || 0)).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/20">
+              <div className="flex items-center gap-3">
+                <CoinBadge coin={SUPPORTED_COIN} />
               </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Wallet className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No available balance</p>
-                <p className="text-sm">Confirmed deposits will appear here</p>
+              <div className="text-right">
+                <p className="font-mono font-semibold">
+                  {usdtBalance.toFixed(6)}
+                </p>
+                <p className="text-sm text-muted-foreground font-mono">
+                  ≈ ${(usdtBalance * (ratesMap[SUPPORTED_COIN] || 1)).toLocaleString()}
+                </p>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 

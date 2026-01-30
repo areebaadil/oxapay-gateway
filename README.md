@@ -1,6 +1,6 @@
 # CryptoGate Payment Gateway
 
-A crypto payment gateway that enables merchants to accept cryptocurrency payments (BTC, ETH, USDT, USDC, LTC, TRX) with automatic conversion tracking and settlement management.
+A crypto payment gateway that enables merchants to accept **USDT (TRC-20)** payments with automatic conversion tracking and settlement management.
 
 ## 🏗️ Architecture Overview
 
@@ -16,6 +16,10 @@ A crypto payment gateway that enables merchants to accept cryptocurrency payment
                         │  (Transactions)  │
                         └──────────────────┘
 ```
+
+## 💰 Supported Currency
+
+**USDT (TRC-20)** is the only supported cryptocurrency for all deposits and withdrawals.
 
 ## 🔐 Authentication
 
@@ -81,15 +85,15 @@ curl -X POST https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api/
 ### Step 2: Display Payment UI to Customer
 
 Show the customer:
-- **Deposit Address**: The crypto address to send funds to
-- **Amount**: Exact amount in the selected cryptocurrency
+- **Deposit Address**: The TRC-20 USDT address to send funds to
+- **Amount**: Exact amount in USDT
 - **QR Code**: For easy mobile wallet scanning
 - **Expiration Timer**: Payment window countdown
 
 ```html
 <!-- Example payment page -->
 <div class="payment-container">
-  <h2>Send exactly 99.99 USDT</h2>
+  <h2>Send exactly 99.99 USDT (TRC-20)</h2>
   <img src="{qr_code}" alt="Payment QR Code" />
   <p>Address: <code>{address}</code></p>
   <p>Expires in: <span id="countdown"></span></p>
@@ -98,7 +102,7 @@ Show the customer:
 
 ### Step 3: Customer Sends Payment
 
-The customer sends the exact crypto amount to the provided address using their wallet.
+The customer sends the exact USDT amount to the provided TRC-20 address using their wallet.
 
 ### Step 4: Receive Webhook Notification
 
@@ -151,7 +155,7 @@ app.post('/webhooks/crypto', async (req, res) => {
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/payments` | Create a new payment |
+| `POST` | `/payments` | Create a new USDT payment |
 | `GET` | `/payments` | List all payments |
 | `GET` | `/payments/{id}` | Get payment details |
 
@@ -165,9 +169,11 @@ POST /payments
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `amount` | number | ✅ | Payment amount in USD |
-| `coin` | string | ✅ | Cryptocurrency (BTC, ETH, USDT, USDC, LTC, TRX) |
+| `coin` | string | ✅ | Must be `USDT` |
 | `user_reference` | string | ✅ | Your unique order/customer ID |
 | `callback_url` | string | ❌ | Webhook URL for status updates |
+
+> **Note**: Only `USDT` is accepted as the coin value. All other cryptocurrencies will be rejected.
 
 #### Get Payment Status
 
@@ -200,7 +206,6 @@ GET /payments/{payment_id}
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `status` | string | Filter by status (PENDING, CONFIRMED, FAILED, EXPIRED) |
-| `coin` | string | Filter by cryptocurrency |
 | `limit` | number | Results per page (default: 50) |
 | `offset` | number | Pagination offset |
 
@@ -208,7 +213,7 @@ GET /payments/{payment_id}
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/balance` | Get current balance per coin |
+| `GET` | `/balance` | Get current USDT balance |
 
 **Response:**
 ```json
@@ -218,14 +223,9 @@ GET /payments/{payment_id}
       "coin": "USDT",
       "amount": 1250.50,
       "usd_value": 1250.50
-    },
-    {
-      "coin": "BTC",
-      "amount": 0.05,
-      "usd_value": 2150.00
     }
   ],
-  "total_usd_value": 3400.50
+  "total_usd_value": 1250.50
 }
 ```
 
@@ -289,13 +289,13 @@ const api = axios.create({
   headers: { 'Authorization': `Bearer ${API_KEY}` }
 });
 
-// Create a payment
+// Create a USDT payment
 app.post('/checkout', async (req, res) => {
-  const { orderId, amount, coin } = req.body;
+  const { orderId, amount } = req.body;
   
   const { data } = await api.post('/payments', {
     amount,
-    coin,
+    coin: 'USDT', // Only USDT is supported
     user_reference: orderId,
     callback_url: 'https://yoursite.com/webhooks/crypto'
   });
@@ -346,7 +346,7 @@ def checkout():
         headers=headers,
         json={
             'amount': data['amount'],
-            'coin': data['coin'],
+            'coin': 'USDT',  # Only USDT is supported
             'user_reference': data['order_id'],
             'callback_url': 'https://yoursite.com/webhooks/crypto'
         }
@@ -377,8 +377,8 @@ def webhook():
 $apiKey = getenv('CRYPTOGATE_API_KEY');
 $baseUrl = 'https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api';
 
-// Create payment
-function createPayment($amount, $coin, $orderId) {
+// Create USDT payment
+function createPayment($amount, $orderId) {
     global $apiKey, $baseUrl;
     
     $ch = curl_init("$baseUrl/payments");
@@ -389,7 +389,7 @@ function createPayment($amount, $coin, $orderId) {
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
         'amount' => $amount,
-        'coin' => $coin,
+        'coin' => 'USDT', // Only USDT is supported
         'user_reference' => $orderId,
         'callback_url' => 'https://yoursite.com/webhooks/crypto'
     ]));

@@ -39,9 +39,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
+import { CoinType, SUPPORTED_COIN } from '@/types';
 
-const ALL_COINS: CoinType[] = ['BTC', 'ETH', 'USDT', 'USDC', 'LTC', 'TRX'];
+// Only USDT is supported for new settlements
+const ALL_COINS: CoinType[] = [SUPPORTED_COIN];
 
 export default function MerchantSettlements() {
   const { merchantId } = useAuth();

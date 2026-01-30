@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ExchangeRate {
-  coin: 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX';
+  coin: 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX' | 'JAZZCASH';
   usd_rate: number;
   updated_at: string;
 }

@@ -22,13 +22,9 @@ import type { Database } from '@/integrations/supabase/types';
 
 type CoinType = Database['public']['Enums']['coin_type'];
 
+// Only USDT is supported for deposits
 const SUPPORTED_COINS: { coin: CoinType; network: string }[] = [
-  { coin: 'BTC', network: 'Bitcoin' },
-  { coin: 'ETH', network: 'Ethereum (ERC-20)' },
   { coin: 'USDT', network: 'Tron (TRC-20)' },
-  { coin: 'USDC', network: 'Ethereum (ERC-20)' },
-  { coin: 'LTC', network: 'Litecoin' },
-  { coin: 'TRX', network: 'Tron' },
 ];
 
 type DepositStep = 'loading' | 'select' | 'payment' | 'confirming' | 'complete' | 'expired' | 'error';

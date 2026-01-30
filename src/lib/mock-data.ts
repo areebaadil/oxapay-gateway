@@ -52,16 +52,16 @@ export const mockMerchants: Merchant[] = [
   },
 ];
 
-// Mock Transactions
+// Mock Transactions - All USDT
 export const mockTransactions: Transaction[] = [
   {
     id: 'tx_001',
     merchantId: 'merch_001',
     depositIntentId: 'dep_001',
-    coin: 'BTC',
-    cryptoAmount: 0.0542,
+    coin: 'USDT',
+    cryptoAmount: 2345.67,
     usdValue: 2345.67,
-    exchangeRate: 43280.45,
+    exchangeRate: 1.00,
     status: 'CONFIRMED',
     txHash: '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12',
     userReference: 'user_12345',
@@ -72,10 +72,10 @@ export const mockTransactions: Transaction[] = [
     id: 'tx_002',
     merchantId: 'merch_001',
     depositIntentId: 'dep_002',
-    coin: 'ETH',
-    cryptoAmount: 1.25,
+    coin: 'USDT',
+    cryptoAmount: 2875.00,
     usdValue: 2875.00,
-    exchangeRate: 2300.00,
+    exchangeRate: 1.00,
     status: 'PENDING',
     txHash: null,
     userReference: 'user_67890',
@@ -100,10 +100,10 @@ export const mockTransactions: Transaction[] = [
     id: 'tx_004',
     merchantId: 'merch_002',
     depositIntentId: 'dep_004',
-    coin: 'BTC',
-    cryptoAmount: 0.125,
+    coin: 'USDT',
+    cryptoAmount: 5410.00,
     usdValue: 5410.00,
-    exchangeRate: 43280.00,
+    exchangeRate: 1.00,
     status: 'FAILED',
     txHash: null,
     userReference: 'buyer_002',
@@ -114,10 +114,10 @@ export const mockTransactions: Transaction[] = [
     id: 'tx_005',
     merchantId: 'merch_004',
     depositIntentId: 'dep_005',
-    coin: 'ETH',
-    cryptoAmount: 3.75,
+    coin: 'USDT',
+    cryptoAmount: 8625.00,
     usdValue: 8625.00,
-    exchangeRate: 2300.00,
+    exchangeRate: 1.00,
     status: 'CONFIRMED',
     txHash: '0x9876543210fedcba9876543210fedcba98765432',
     userReference: 'trader_abc',
@@ -142,10 +142,10 @@ export const mockTransactions: Transaction[] = [
     id: 'tx_007',
     merchantId: 'merch_004',
     depositIntentId: 'dep_007',
-    coin: 'LTC',
-    cryptoAmount: 15.5,
+    coin: 'USDT',
+    cryptoAmount: 1162.50,
     usdValue: 1162.50,
-    exchangeRate: 75.00,
+    exchangeRate: 1.00,
     status: 'EXPIRED',
     txHash: null,
     userReference: 'trader_xyz',
@@ -156,10 +156,10 @@ export const mockTransactions: Transaction[] = [
     id: 'tx_008',
     merchantId: 'merch_002',
     depositIntentId: 'dep_008',
-    coin: 'TRX',
-    cryptoAmount: 10000,
+    coin: 'USDT',
+    cryptoAmount: 1120.00,
     usdValue: 1120.00,
-    exchangeRate: 0.112,
+    exchangeRate: 1.00,
     status: 'PENDING',
     txHash: null,
     userReference: 'collector_001',
@@ -168,16 +168,16 @@ export const mockTransactions: Transaction[] = [
   },
 ];
 
-// Mock Settlements
+// Mock Settlements - All USDT
 export const mockSettlements: Settlement[] = [
   {
     id: 'set_001',
     merchantId: 'merch_001',
-    coin: 'BTC',
-    amount: 0.15,
+    coin: 'USDT',
+    amount: 6492.07,
     usdValueAtRequest: 6492.07,
     status: 'PENDING',
-    walletAddress: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    walletAddress: 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr',
     requestedAt: new Date('2025-01-08T10:00:00'),
     processedAt: null,
     processedBy: null,
@@ -197,11 +197,11 @@ export const mockSettlements: Settlement[] = [
   {
     id: 'set_003',
     merchantId: 'merch_004',
-    coin: 'ETH',
-    amount: 5.25,
+    coin: 'USDT',
+    amount: 12075.00,
     usdValueAtRequest: 12075.00,
     status: 'COMPLETED',
-    walletAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f8e',
+    walletAddress: 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr',
     requestedAt: new Date('2025-01-05T16:00:00'),
     processedAt: new Date('2025-01-06T11:00:00'),
     processedBy: 'admin_001',
@@ -209,27 +209,27 @@ export const mockSettlements: Settlement[] = [
   {
     id: 'set_004',
     merchantId: 'merch_001',
-    coin: 'ETH',
-    amount: 2.0,
+    coin: 'USDT',
+    amount: 4600.00,
     usdValueAtRequest: 4600.00,
     status: 'REJECTED',
-    walletAddress: '0x8Ba1f109551bD432803012645Ac136ddd64DBA72',
+    walletAddress: 'TJYXRvfR5C6xY1uyPJB8p1bC7iSmKWZvKr',
     requestedAt: new Date('2025-01-04T08:00:00'),
     processedAt: new Date('2025-01-04T12:00:00'),
     processedBy: 'admin_001',
   },
 ];
 
-// Mock Ledger Entries
+// Mock Ledger Entries - All USDT
 export const mockLedgerEntries: LedgerEntry[] = [
   {
     id: 'led_001',
     transactionId: 'tx_001',
     merchantId: 'merch_001',
-    coin: 'BTC',
+    coin: 'USDT',
     entryType: 'CREDIT',
     category: 'DEPOSIT',
-    amount: 0.0542,
+    amount: 2345.67,
     usdValueAtTime: 2345.67,
     description: 'Deposit from user_12345',
     createdAt: new Date('2025-01-07T10:45:00'),
@@ -238,10 +238,10 @@ export const mockLedgerEntries: LedgerEntry[] = [
     id: 'led_002',
     transactionId: 'tx_001',
     merchantId: 'merch_001',
-    coin: 'BTC',
+    coin: 'USDT',
     entryType: 'DEBIT',
     category: 'FEE',
-    amount: 0.000813,
+    amount: 35.19,
     usdValueAtTime: 35.19,
     description: 'Platform fee (1.5%)',
     createdAt: new Date('2025-01-07T10:45:00'),
@@ -274,10 +274,10 @@ export const mockLedgerEntries: LedgerEntry[] = [
     id: 'led_005',
     transactionId: 'tx_005',
     merchantId: 'merch_004',
-    coin: 'ETH',
+    coin: 'USDT',
     entryType: 'CREDIT',
     category: 'DEPOSIT',
-    amount: 3.75,
+    amount: 8625.00,
     usdValueAtTime: 8625.00,
     description: 'Deposit from trader_abc',
     createdAt: new Date('2025-01-08T08:20:00'),
@@ -286,10 +286,10 @@ export const mockLedgerEntries: LedgerEntry[] = [
     id: 'led_006',
     transactionId: 'tx_005',
     merchantId: 'merch_004',
-    coin: 'ETH',
+    coin: 'USDT',
     entryType: 'DEBIT',
     category: 'FEE',
-    amount: 0.065625,
+    amount: 150.94,
     usdValueAtTime: 150.94,
     description: 'Platform fee (1.75%)',
     createdAt: new Date('2025-01-08T08:20:00'),
@@ -322,8 +322,8 @@ export const getAnalyticsData = (merchantId?: string): AnalyticsData => {
     };
   });
 
-  // Volume by coin
-  const coins: CoinType[] = ['BTC', 'ETH', 'USDT', 'USDC', 'LTC', 'TRX'];
+  // Volume by coin - Only USDT
+  const coins: CoinType[] = ['USDT'];
   const volumeByCoin = coins.map(coin => {
     const coinTx = confirmedTx.filter(tx => tx.coin === coin);
     return {
@@ -345,12 +345,7 @@ export const getAnalyticsData = (merchantId?: string): AnalyticsData => {
   };
 };
 
-// Exchange Rates
+// Exchange Rates - Only USDT
 export const exchangeRates = {
-  BTC: 43280.45,
-  ETH: 2300.00,
   USDT: 1.00,
-  USDC: 1.00,
-  LTC: 75.00,
-  TRX: 0.112,
 };

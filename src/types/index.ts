@@ -2,7 +2,11 @@
 
 export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED' | 'SETTLED';
 
+// System supports only USDT, but type matches database for compatibility
 export type CoinType = 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX' | 'JAZZCASH';
+
+// The only supported coin for new transactions
+export const SUPPORTED_COIN: CoinType = 'USDT';
 
 export type UserRole = 'admin' | 'merchant' | 'agent';
 

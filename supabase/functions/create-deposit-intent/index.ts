@@ -37,6 +37,14 @@ serve(async (req) => {
       );
     }
 
+    // Only USDT is supported
+    if (coin.toUpperCase() !== 'USDT') {
+      return new Response(
+        JSON.stringify({ error: "Only USDT is supported for deposits" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify merchant exists and is enabled
     const { data: merchant, error: merchantError } = await supabase
       .from("merchants")

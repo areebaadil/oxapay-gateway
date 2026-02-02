@@ -34,6 +34,7 @@ const adminLinks = [
 
 const agentLinks = [
   { to: '/agent', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/agent/merchants', icon: Users, label: 'Merchants' },
   { to: '/agent/transactions', icon: ArrowDownToLine, label: 'Transactions' },
   { to: '/agent/settlements', icon: Wallet, label: 'Settlements' },
 ];

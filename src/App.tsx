@@ -23,6 +23,7 @@ import MerchantApiKeys from "./pages/merchant/MerchantApiKeys";
 import AgentDashboard from "./pages/agent/AgentDashboard";
 import AgentTransactions from "./pages/agent/AgentTransactions";
 import AgentSettlements from "./pages/agent/AgentSettlements";
+import AgentMerchants from "./pages/agent/AgentMerchants";
 import DepositPage from "./pages/deposit/DepositPage";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,11 @@ const App = () => (
             <Route path="/agent" element={
               <ProtectedRoute requiredRole="agent">
                 <AgentDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/agent/merchants" element={
+              <ProtectedRoute requiredRole="agent">
+                <AgentMerchants />
               </ProtectedRoute>
             } />
             <Route path="/agent/transactions" element={

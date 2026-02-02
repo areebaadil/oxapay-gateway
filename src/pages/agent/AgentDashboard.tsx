@@ -152,6 +152,45 @@ export default function AgentDashboard() {
           </Card>
         </div>
 
+        {/* My Merchants List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              My Merchants ({merchantCount})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!agentMerchants || agentMerchants.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No merchants assigned yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {agentMerchants.map((am: any) => (
+                  <div key={am.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-primary">
+                          {am.merchant?.name?.charAt(0)?.toUpperCase() || 'M'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{am.merchant?.name}</p>
+                        <p className="text-xs text-muted-foreground">{am.merchant?.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Deposit Fee</p>
+                      <p className="font-medium">{am.merchant?.deposit_fee_percentage}%</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Merchant Revenue Breakdown */}
         <Card>
           <CardHeader>

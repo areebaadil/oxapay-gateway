@@ -192,8 +192,10 @@ export type Database = {
           deposit_address: string | null
           expected_amount: number
           expires_at: string
+          failure_url: string | null
           id: string
           merchant_id: string
+          success_url: string | null
           user_reference: string
         }
         Insert: {
@@ -203,8 +205,10 @@ export type Database = {
           deposit_address?: string | null
           expected_amount: number
           expires_at: string
+          failure_url?: string | null
           id?: string
           merchant_id: string
+          success_url?: string | null
           user_reference: string
         }
         Update: {
@@ -214,8 +218,10 @@ export type Database = {
           deposit_address?: string | null
           expected_amount?: number
           expires_at?: string
+          failure_url?: string | null
           id?: string
           merchant_id?: string
+          success_url?: string | null
           user_reference?: string
         }
         Relationships: [

@@ -12,6 +12,8 @@ interface CreateDepositIntentRequest {
   coin: string;
   expected_amount: number;
   callback_url?: string;
+  success_url?: string;
+  failure_url?: string;
 }
 
 serve(async (req) => {
@@ -25,7 +27,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: CreateDepositIntentRequest = await req.json();
-    const { merchant_id, user_reference, coin, expected_amount, callback_url } = body;
+    const { merchant_id, user_reference, coin, expected_amount, callback_url, success_url, failure_url } = body;
 
     // Validate required fields
     if (!merchant_id || !user_reference || !coin || !expected_amount) {
@@ -73,6 +75,8 @@ serve(async (req) => {
         coin: coin.toUpperCase(),
         expected_amount,
         callback_url: callback_url || merchant.webhook_url,
+        success_url,
+        failure_url,
         expires_at: expiresAt.toISOString(),
       })
       .select()

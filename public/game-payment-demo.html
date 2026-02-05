@@ -812,8 +812,17 @@
       <input type="password" id="apiKey" placeholder="Enter your merchant API key">
     </div>
     <div class="form-group">
-      <label>Webhook URL (for testing)</label>
+      <label>Webhook URL (optional)</label>
       <input type="text" id="webhookUrl" placeholder="https://your-server.com/webhook">
+    </div>
+    <div class="form-group">
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="useHostedPage" checked style="width: auto;">
+        Use Hosted Payment Page (Recommended)
+      </label>
+      <p style="font-size: 12px; color: #8892b0; margin-top: 4px;">
+        Redirects to the gateway's secure payment page
+      </p>
     </div>
     <button class="deposit-button" style="padding: 10px; font-size: 14px;" onclick="saveConfig()">
       Save Configuration
@@ -836,7 +845,8 @@
     const config = {
       apiEndpoint: localStorage.getItem('gameApiEndpoint') || 'https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api',
       apiKey: localStorage.getItem('gameApiKey') || '',
-      webhookUrl: localStorage.getItem('gameWebhookUrl') || ''
+      webhookUrl: localStorage.getItem('gameWebhookUrl') || '',
+      useHostedPage: localStorage.getItem('gameUseHostedPage') !== 'false'
     };
 
     // Initialize
@@ -844,6 +854,7 @@
       document.getElementById('apiEndpoint').value = config.apiEndpoint;
       document.getElementById('apiKey').value = config.apiKey;
       document.getElementById('webhookUrl').value = config.webhookUrl;
+      document.getElementById('useHostedPage').checked = config.useHostedPage;
 
       // Load saved gem balance
       const savedGems = localStorage.getItem('gameGemBalance');
@@ -894,7 +905,75 @@
       document.getElementById('depositButtonText').textContent = 'Processing...';
 
       try {
-        const response = await fetch(`${config.apiEndpoint}/payments`, {
+        // Check if using hosted payment page (recommended)
+        if (config.useHostedPage) {
+          await initiateHostedPayment(amount, playerId);
+        } else {
+          await initiateDirectPayment(amount, playerId);
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert(`Payment Error: ${error.message}`);
+      } finally {
+        btn.disabled = false;
+        document.getElementById('depositButtonText').textContent = 'Deposit Now';
+      }
+    }
+
+    // Hosted Payment Page flow (recommended)
+    async function initiateHostedPayment(amount, playerId) {
+      // Build success/failure URLs with order info
+      const currentUrl = window.location.href.split('?')[0];
+      const successUrl = `${currentUrl}?status=success&amount=${amount}&gems=${currentGemsAmount}&player=${encodeURIComponent(playerId)}`;
+      const failureUrl = `${currentUrl}?status=failed&amount=${amount}&player=${encodeURIComponent(playerId)}`;
+
+      const response = await fetch(`${config.apiEndpoint}/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+          amount: amount,
+          currency: 'USD',
+          pay_currency: 'USDT',
+          order_id: `game_${playerId}_${Date.now()}`,
+          description: `Deposit ${amount} USDT for ${currentGemsAmount} gems`,
+          callback_url: config.webhookUrl || undefined,
+          success_url: successUrl,
+          failure_url: failureUrl
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // Store pending transaction info
+        const pendingTx = {
+          id: data.data.payment_id || data.data.deposit_intent_id,
+          amount: amount,
+          gems: currentGemsAmount,
+          status: 'pending',
+          date: new Date().toISOString()
+        };
+        localStorage.setItem('pendingTransaction', JSON.stringify(pendingTx));
+        addToHistory(pendingTx);
+        
+        // Redirect to hosted payment page
+        const hostedUrl = data.data.hosted_payment_url || data.data.hosted_deposit_page_url;
+        if (hostedUrl) {
+          window.location.href = hostedUrl;
+        } else {
+          throw new Error('No hosted payment URL received');
+        }
+      } else {
+        throw new Error(data.error || 'Failed to create payment');
+      }
+    }
+
+    // Direct Payment flow (shows modal with QR code)
+    async function initiateDirectPayment(amount, playerId) {
+      const response = await fetch(`${config.apiEndpoint}/payments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1196,14 +1275,66 @@
       config.apiEndpoint = document.getElementById('apiEndpoint').value;
       config.apiKey = document.getElementById('apiKey').value;
       config.webhookUrl = document.getElementById('webhookUrl').value;
+      config.useHostedPage = document.getElementById('useHostedPage').checked;
 
       localStorage.setItem('gameApiEndpoint', config.apiEndpoint);
       localStorage.setItem('gameApiKey', config.apiKey);
       localStorage.setItem('gameWebhookUrl', config.webhookUrl);
+      localStorage.setItem('gameUseHostedPage', config.useHostedPage.toString());
 
       alert('Configuration saved!');
       toggleConfig();
     }
+
+    // Handle return from hosted payment page
+    function handlePaymentReturn() {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      
+      if (!status) return;
+
+      const amount = parseFloat(params.get('amount')) || 0;
+      const gems = parseInt(params.get('gems')) || 0;
+      const player = params.get('player') || '';
+
+      // Clear URL params
+      window.history.replaceState({}, '', window.location.pathname);
+
+      if (status === 'success' && gems > 0) {
+        // Update gem balance
+        const currentGems = parseInt(document.getElementById('currentGems').textContent.replace(/,/g, '')) || 0;
+        const newBalance = currentGems + gems;
+        document.getElementById('currentGems').textContent = newBalance.toLocaleString();
+        localStorage.setItem('gameGemBalance', newBalance.toString());
+
+        // Update pending transaction in history
+        const pendingTx = JSON.parse(localStorage.getItem('pendingTransaction') || 'null');
+        if (pendingTx) {
+          updateHistoryStatus(pendingTx.id, 'confirmed');
+          localStorage.removeItem('pendingTransaction');
+        }
+
+        // Show success message
+        currentGemsAmount = gems;
+        triggerGemsAnimation();
+        
+        setTimeout(() => {
+          alert(`🎉 Payment Successful!\n\n+${gems.toLocaleString()} gems have been added to your account!`);
+        }, 500);
+      } else if (status === 'failed') {
+        // Update pending transaction in history
+        const pendingTx = JSON.parse(localStorage.getItem('pendingTransaction') || 'null');
+        if (pendingTx) {
+          updateHistoryStatus(pendingTx.id, 'failed');
+          localStorage.removeItem('pendingTransaction');
+        }
+
+        alert('Payment failed or was cancelled. Please try again.');
+      }
+    }
+
+    // Call on page load
+    handlePaymentReturn();
   </script>
 </body>
 </html>

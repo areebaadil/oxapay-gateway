@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CryptoQuest - Deposit USDT</title>
+  <title>CryptoQuest - Game Wallet</title>
   <style>
     * {
       margin: 0;
@@ -13,150 +13,136 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
       min-height: 100vh;
       color: #fff;
     }
 
     /* Header */
     .game-header {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 15px 30px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid #e94560;
+      border-bottom: 3px solid #ff6b6b;
     }
 
     .game-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       font-size: 24px;
       font-weight: bold;
-      color: #e94560;
+      color: #ff6b6b;
     }
 
     .game-logo svg {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
+      fill: #ff6b6b;
     }
 
     .user-info {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
+    }
+
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    /* Main Content */
+    .main-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Wallet Card */
+    .wallet-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 32px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .wallet-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .wallet-header h2 {
+      font-size: 18px;
+      color: #a0a0a0;
+      margin-bottom: 8px;
+      font-weight: normal;
     }
 
     .gem-balance {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: bold;
+      justify-content: center;
+      gap: 12px;
     }
 
     .gem-icon {
-      width: 24px;
-      height: 24px;
+      width: 48px;
+      height: 48px;
     }
 
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .gem-amount {
+      font-size: 48px;
       font-weight: bold;
-    }
-
-    /* Main Content */
-    .main-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-
-    .page-title {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .page-title h1 {
-      font-size: 36px;
-      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 50%, #feca57 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 10px;
     }
 
-    .page-title p {
-      color: #8892b0;
-      font-size: 16px;
+    .gem-label {
+      font-size: 20px;
+      color: #667eea;
+      margin-left: 4px;
     }
 
     /* Deposit Section */
     .deposit-section {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 40px;
-      margin-bottom: 30px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 24px;
     }
 
-    .deposit-header {
+    .deposit-title {
+      font-size: 16px;
+      color: #a0a0a0;
+      margin-bottom: 16px;
       text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .deposit-header h2 {
-      color: #ccd6f6;
-      margin-bottom: 10px;
-    }
-
-    .deposit-header p {
-      color: #8892b0;
-      font-size: 14px;
-    }
-
-    .conversion-rate {
-      text-align: center;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-      border: 1px solid rgba(102, 126, 234, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 30px;
-    }
-
-    .conversion-rate span {
-      color: #64ffda;
-      font-weight: bold;
     }
 
     .amount-input-wrapper {
-      margin-bottom: 30px;
-    }
-
-    .amount-label {
-      display: block;
-      color: #8892b0;
-      font-size: 14px;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .amount-input-container {
       display: flex;
       align-items: center;
-      background: rgba(0, 0, 0, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 4px;
-      transition: border-color 0.3s ease;
+      transition: border-color 0.3s;
     }
 
     .amount-input-container:focus-within {
@@ -166,12 +152,10 @@
     .currency-badge {
       background: #26A17B;
       color: white;
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-radius: 8px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 14px;
     }
 
     .amount-input {
@@ -179,115 +163,73 @@
       background: transparent;
       border: none;
       color: #fff;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
       padding: 12px 16px;
       text-align: right;
       outline: none;
+      width: 100%;
     }
 
     .amount-input::placeholder {
-      color: #4a5568;
+      color: #4a4a6a;
     }
 
     .quick-amounts {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 30px;
-    }
-
-    .quick-amount-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #ccd6f6;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 14px;
-    }
-
-    .quick-amount-btn:hover {
-      background: rgba(102, 126, 234, 0.2);
-      border-color: #667eea;
-    }
-
-    .gems-preview {
-      background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
-      border: 2px solid rgba(233, 69, 96, 0.3);
-      border-radius: 16px;
-      padding: 24px;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .gems-preview-label {
-      color: #8892b0;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-
-    .gems-preview-value {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      font-size: 42px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .gems-preview-value svg {
-      width: 48px;
-      height: 48px;
-    }
-
-    .form-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
       margin-bottom: 20px;
     }
 
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      color: #8892b0;
+    .quick-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #ccc;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
       font-size: 14px;
     }
 
-    .form-group input {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      color: #fff;
-      font-size: 16px;
-      transition: border-color 0.3s ease;
-    }
-
-    .form-group input:focus {
-      outline: none;
+    .quick-btn:hover {
+      background: rgba(102, 126, 234, 0.2);
       border-color: #667eea;
+      color: #fff;
     }
 
-    .form-group input::placeholder {
-      color: #4a5568;
+    .gems-preview {
+      text-align: center;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .gems-preview-label {
+      font-size: 13px;
+      color: #a0a0a0;
+      margin-bottom: 4px;
+    }
+
+    .gems-preview-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
     }
 
     .deposit-button {
       width: 100%;
       padding: 18px;
-      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
       border-radius: 12px;
       color: #fff;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.3s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -296,261 +238,57 @@
 
     .deposit-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
     }
 
     .deposit-button:disabled {
-      opacity: 0.5;
+      opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    /* Transaction History */
-    .history-section {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 30px;
-    }
-
-    .history-section h3 {
-      color: #ccd6f6;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .history-list {
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-
-    .history-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .history-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .history-amount {
-      font-weight: bold;
-      color: #64ffda;
-    }
-
-    .history-date {
-      font-size: 12px;
-      color: #8892b0;
-    }
-
-    .history-gems {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #feca57;
-      font-weight: bold;
-    }
-
-    .history-status {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .history-status.confirmed {
-      background: rgba(100, 255, 218, 0.2);
-      color: #64ffda;
-    }
-
-    .history-status.pending {
-      background: rgba(254, 202, 87, 0.2);
-      color: #feca57;
-    }
-
-    .no-history {
-      text-align: center;
-      color: #8892b0;
-      padding: 30px;
-    }
-
-    /* Payment Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 450px;
-      width: 90%;
-      text-align: center;
-      border: 2px solid #e94560;
-      position: relative;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: none;
-      border: none;
-      color: #8892b0;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    .modal-close:hover {
-      color: #e94560;
-    }
-
-    .payment-status {
-      margin-bottom: 24px;
-    }
-
-    .status-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .status-icon.pending {
-      background: rgba(254, 202, 87, 0.2);
-      animation: pulse 2s infinite;
-    }
-
-    .status-icon.success {
-      background: rgba(100, 255, 218, 0.2);
-    }
-
-    .status-icon.failed {
-      background: rgba(233, 69, 96, 0.2);
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.8; }
-    }
-
-    .qr-code {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      display: inline-block;
-      margin-bottom: 20px;
-    }
-
-    .qr-code img {
-      width: 180px;
-      height: 180px;
-    }
-
-    .crypto-address {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      word-break: break-all;
-      font-family: monospace;
-      font-size: 12px;
-      color: #64ffda;
-    }
-
-    .copy-btn {
-      background: rgba(102, 126, 234, 0.2);
-      border: 1px solid #667eea;
-      color: #667eea;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .copy-btn:hover {
-      background: #667eea;
-      color: #fff;
-    }
-
-    .payment-amount {
-      font-size: 28px;
-      font-weight: bold;
-      color: #feca57;
-      margin: 16px 0;
-    }
-
-    .payment-gems-info {
-      color: #8892b0;
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
-
-    .payment-gems-info span {
-      color: #667eea;
-      font-weight: bold;
-    }
-
-    .payment-timer {
-      color: #8892b0;
-      font-size: 14px;
-    }
-
-    .timer-value {
-      color: #e94560;
-      font-weight: bold;
-    }
-
     /* Config Panel */
-    .config-panel {
+    .config-toggle {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: rgba(0, 0, 0, 0.9);
-      border: 1px solid #e94560;
-      border-radius: 12px;
-      padding: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid rgba(255,255,255,0.2);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .config-toggle svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .config-panel {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
       width: 320px;
-      z-index: 100;
+      background: rgba(20, 20, 40, 0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .config-panel.hidden {
+      display: none;
     }
 
     .config-panel h3 {
-      color: #e94560;
-      margin-bottom: 15px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 16px;
     }
 
     .config-panel .form-group {
@@ -558,82 +296,118 @@
     }
 
     .config-panel label {
+      display: block;
       font-size: 12px;
+      color: #a0a0a0;
+      margin-bottom: 6px;
     }
 
-    .config-panel input {
+    .config-panel input[type="text"],
+    .config-panel input[type="password"] {
+      width: 100%;
       padding: 10px 12px;
-      font-size: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
     }
 
-    .config-toggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #e94560;
+    .config-panel input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .save-config-btn {
+      width: 100%;
+      padding: 12px;
+      background: #667eea;
       border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: bold;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 99;
-    }
-
-    .config-toggle svg {
-      width: 24px;
-      height: 24px;
-      fill: #fff;
-    }
-
-    .config-panel.hidden {
-      display: none;
+      margin-top: 8px;
     }
 
     /* Success Animation */
-    .gems-animation {
+    .success-overlay {
       display: none;
-    }
-
-    .gems-animation.active {
-      display: block;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
-      z-index: 999;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
     }
 
-    .gem-particle {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      animation: gemFall 2s ease-out forwards;
+    .success-overlay.active {
+      display: flex;
     }
 
-    @keyframes gemFall {
-      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    .success-content {
+      text-align: center;
+      animation: popIn 0.5s ease;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .config-panel {
-        width: calc(100% - 40px);
-        left: 20px;
-      }
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
 
-      .quick-amounts {
-        justify-content: center;
-      }
+    .success-icon {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
 
-      .gems-preview-value {
-        font-size: 32px;
-      }
+    .success-icon svg {
+      width: 50px;
+      height: 50px;
+      stroke: white;
+    }
+
+    .success-title {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .success-gems {
+      font-size: 36px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 24px;
+    }
+
+    .success-btn {
+      padding: 14px 40px;
+      background: #667eea;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Info text */
+    .info-text {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .info-text a {
+      color: #667eea;
     }
   </style>
 </head>
@@ -641,159 +415,76 @@
   <!-- Header -->
   <header class="game-header">
     <div class="game-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      <svg viewBox="0 0 24 24">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
       </svg>
       CryptoQuest
     </div>
     <div class="user-info">
-      <div class="gem-balance">
-        <svg class="gem-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-          <polyline points="2 17 12 22 22 17"/>
-          <polyline points="2 12 12 17 22 12"/>
-        </svg>
-        <span id="currentGems">1,250</span>
-      </div>
-      <div class="user-avatar">JD</div>
+      <div class="user-avatar">P</div>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="main-container">
-    <div class="page-title">
-      <h1>💎 Deposit USDT</h1>
-      <p>Convert your USDT to gems instantly!</p>
-    </div>
-
-    <!-- Deposit Section -->
-    <div class="deposit-section">
-      <div class="deposit-header">
-        <h2>Enter Deposit Amount</h2>
-        <p>Deposit USDT and receive gems in your account</p>
-      </div>
-
-      <div class="conversion-rate">
-        💰 Conversion Rate: <span>1 USDT = 100 Gems</span>
-      </div>
-
-      <div class="amount-input-wrapper">
-        <label class="amount-label">Amount to Deposit</label>
-        <div class="amount-input-container">
-          <div class="currency-badge">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <circle cx="12" cy="12" r="10"/>
-              <text x="12" y="16" text-anchor="middle" font-size="10" fill="#26A17B" font-weight="bold">₮</text>
-            </svg>
-            USDT
-          </div>
-          <input 
-            type="number" 
-            class="amount-input" 
-            id="depositAmount" 
-            placeholder="0.00" 
-            min="1" 
-            step="0.01"
-            oninput="updateGemPreview()"
-          >
-        </div>
-      </div>
-
-      <div class="quick-amounts">
-        <button class="quick-amount-btn" onclick="setAmount(10)">$10</button>
-        <button class="quick-amount-btn" onclick="setAmount(25)">$25</button>
-        <button class="quick-amount-btn" onclick="setAmount(50)">$50</button>
-        <button class="quick-amount-btn" onclick="setAmount(100)">$100</button>
-        <button class="quick-amount-btn" onclick="setAmount(250)">$250</button>
-        <button class="quick-amount-btn" onclick="setAmount(500)">$500</button>
-      </div>
-
-      <div class="gems-preview">
-        <div class="gems-preview-label">You will receive</div>
-        <div class="gems-preview-value">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+    <!-- Wallet Card -->
+    <div class="wallet-card">
+      <div class="wallet-header">
+        <h2>Your Gem Balance</h2>
+        <div class="gem-balance">
+          <svg class="gem-icon" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
             <polygon points="12 2 2 7 12 12 22 7 12 2"/>
             <polyline points="2 17 12 22 22 17"/>
             <polyline points="2 12 12 17 22 12"/>
           </svg>
-          <span id="gemsPreview">0</span>
+          <span class="gem-amount" id="gemBalance">0</span>
+          <span class="gem-label">GEMS</span>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Player ID / Email</label>
-        <input type="text" id="playerId" placeholder="Enter your player ID or email">
-      </div>
+      <div class="deposit-section">
+        <div class="deposit-title">Buy Gems with USDT</div>
+        
+        <div class="amount-input-wrapper">
+          <div class="amount-input-container">
+            <span class="currency-badge">USDT</span>
+            <input type="number" class="amount-input" id="depositAmount" placeholder="0" min="1" oninput="updatePreview()">
+          </div>
+        </div>
 
-      <button class="deposit-button" id="depositButton" onclick="initiateDeposit()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-          <polyline points="2 17 12 22 22 17"/>
-          <polyline points="2 12 12 17 22 12"/>
-        </svg>
-        <span id="depositButtonText">Deposit Now</span>
-      </button>
+        <div class="quick-amounts">
+          <button class="quick-btn" onclick="setAmount(10)">$10</button>
+          <button class="quick-btn" onclick="setAmount(25)">$25</button>
+          <button class="quick-btn" onclick="setAmount(50)">$50</button>
+          <button class="quick-btn" onclick="setAmount(100)">$100</button>
+        </div>
+
+        <div class="gems-preview">
+          <div class="gems-preview-label">You will receive</div>
+          <div class="gems-preview-value"><span id="gemsPreview">0</span> Gems</div>
+        </div>
+
+        <button class="deposit-button" id="depositBtn" onclick="deposit()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span id="depositBtnText">Deposit & Get Gems</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Transaction History -->
-    <div class="history-section">
-      <h3>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        Recent Deposits
-      </h3>
-      <div class="history-list" id="historyList">
-        <div class="no-history">No deposits yet. Make your first deposit above!</div>
-      </div>
-    </div>
+    <p class="info-text">
+      Secure payment powered by CryptoGate<br>
+      1 USDT = 100 Gems
+    </p>
   </main>
 
-  <!-- Payment Modal -->
-  <div class="modal-overlay" id="paymentModal">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">&times;</button>
-      
-      <div class="payment-status" id="paymentStatus">
-        <div class="status-icon pending" id="statusIcon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#feca57" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <h3 id="statusTitle">Awaiting Payment</h3>
-        <p id="statusMessage">Send the exact amount to the address below</p>
-      </div>
-
-      <div id="paymentDetails">
-        <div class="qr-code" id="qrCodeContainer">
-          <img id="qrCode" src="" alt="QR Code">
-        </div>
-
-        <div class="payment-amount" id="paymentAmount">0.00 USDT</div>
-
-        <div class="payment-gems-info">
-          You will receive <span id="modalGemsAmount">0</span> gems
-        </div>
-
-        <div class="crypto-address" id="cryptoAddress">Loading...</div>
-
-        <button class="copy-btn" onclick="copyAddress()">
-          📋 Copy Address
-        </button>
-
-        <div class="payment-timer">
-          Payment expires in: <span class="timer-value" id="paymentTimer">60:00</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Gems Animation -->
-  <div class="gems-animation" id="gemsAnimation"></div>
-
-  <!-- Config Toggle Button -->
-  <button class="config-toggle" id="configToggle" onclick="toggleConfig()">
+  <!-- Config Toggle -->
+  <button class="config-toggle" onclick="toggleConfig()">
     <svg viewBox="0 0 24 24">
       <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -802,539 +493,163 @@
 
   <!-- Config Panel -->
   <div class="config-panel hidden" id="configPanel">
-    <h3>⚙️ API Configuration</h3>
+    <h3>⚙️ API Settings</h3>
     <div class="form-group">
-      <label>API Endpoint</label>
-      <input type="text" id="apiEndpoint" value="https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api">
+      <label>Merchant API Key</label>
+      <input type="password" id="apiKey" placeholder="pk_xxxxxxxx_...">
     </div>
-    <div class="form-group">
-      <label>API Key</label>
-      <input type="password" id="apiKey" placeholder="Enter your merchant API key">
+    <button class="save-config-btn" onclick="saveConfig()">Save & Close</button>
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-content">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2 class="success-title">Payment Successful!</h2>
+      <div class="success-gems">+<span id="successGems">0</span> Gems</div>
+      <button class="success-btn" onclick="closeSuccess()">Continue Playing</button>
     </div>
-    <div class="form-group">
-      <label>Webhook URL (optional)</label>
-      <input type="text" id="webhookUrl" placeholder="https://your-server.com/webhook">
-    </div>
-    <div class="form-group">
-      <label style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="useHostedPage" checked style="width: auto;">
-        Use Hosted Payment Page (Recommended)
-      </label>
-      <p style="font-size: 12px; color: #8892b0; margin-top: 4px;">
-        Redirects to the gateway's secure payment page
-      </p>
-    </div>
-    <button class="deposit-button" style="padding: 10px; font-size: 14px;" onclick="saveConfig()">
-      Save Configuration
-    </button>
   </div>
 
   <script>
-    // Constants
-    const GEMS_PER_USDT = 100; // 1 USDT = 100 gems
-
-    // State
-    let paymentCheckInterval = null;
-    let timerInterval = null;
-    let currentPaymentId = null;
-    let currentDepositAmount = 0;
-    let currentGemsAmount = 0;
-    let depositHistory = JSON.parse(localStorage.getItem('depositHistory') || '[]');
-
-    // Config
-    const config = {
-      apiEndpoint: localStorage.getItem('gameApiEndpoint') || 'https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api',
-      apiKey: localStorage.getItem('gameApiKey') || '',
-      webhookUrl: localStorage.getItem('gameWebhookUrl') || '',
-      useHostedPage: localStorage.getItem('gameUseHostedPage') !== 'false'
-    };
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('apiEndpoint').value = config.apiEndpoint;
-      document.getElementById('apiKey').value = config.apiKey;
-      document.getElementById('webhookUrl').value = config.webhookUrl;
-      document.getElementById('useHostedPage').checked = config.useHostedPage;
-
-      // Load saved gem balance
-      const savedGems = localStorage.getItem('gameGemBalance');
-      if (savedGems) {
-        document.getElementById('currentGems').textContent = parseInt(savedGems).toLocaleString();
-      }
-
-      // Render deposit history
-      renderDepositHistory();
-    });
+    const GEMS_PER_USDT = 100;
+    const API_BASE = 'https://hhioqglejbjcqcmqqsnj.supabase.co/functions/v1/merchant-api';
+    
+    // Load saved data
+    let gemBalance = parseInt(localStorage.getItem('gameGemBalance')) || 0;
+    let apiKey = localStorage.getItem('gameApiKey') || '';
+    
+    document.getElementById('gemBalance').textContent = gemBalance.toLocaleString();
+    document.getElementById('apiKey').value = apiKey;
 
     function setAmount(amount) {
       document.getElementById('depositAmount').value = amount;
-      updateGemPreview();
+      updatePreview();
     }
 
-    function updateGemPreview() {
+    function updatePreview() {
       const amount = parseFloat(document.getElementById('depositAmount').value) || 0;
-      const gems = Math.floor(amount * GEMS_PER_USDT);
-      document.getElementById('gemsPreview').textContent = gems.toLocaleString();
+      document.getElementById('gemsPreview').textContent = (amount * GEMS_PER_USDT).toLocaleString();
     }
 
-    async function initiateDeposit() {
+    function toggleConfig() {
+      document.getElementById('configPanel').classList.toggle('hidden');
+    }
+
+    function saveConfig() {
+      apiKey = document.getElementById('apiKey').value.trim();
+      localStorage.setItem('gameApiKey', apiKey);
+      toggleConfig();
+      alert('Settings saved!');
+    }
+
+    async function deposit() {
       const amount = parseFloat(document.getElementById('depositAmount').value);
-      const playerId = document.getElementById('playerId').value.trim();
-
+      
       if (!amount || amount < 1) {
-        alert('Please enter a valid amount (minimum 1 USDT)');
+        alert('Please enter an amount (minimum $1)');
         return;
       }
 
-      if (!playerId) {
-        alert('Please enter your Player ID or Email');
-        return;
-      }
-
-      if (!config.apiKey) {
-        alert('Please configure your API key in the settings panel');
+      if (!apiKey) {
+        alert('Please configure your API key first (click the gear icon)');
         toggleConfig();
         return;
       }
 
-      currentDepositAmount = amount;
-      currentGemsAmount = Math.floor(amount * GEMS_PER_USDT);
-
-      const btn = document.getElementById('depositButton');
+      const btn = document.getElementById('depositBtn');
+      const btnText = document.getElementById('depositBtnText');
       btn.disabled = true;
-      document.getElementById('depositButtonText').textContent = 'Processing...';
+      btnText.textContent = 'Processing...';
 
       try {
-        // Check if using hosted payment page (recommended)
-        if (config.useHostedPage) {
-          await initiateHostedPayment(amount, playerId);
-        } else {
-          await initiateDirectPayment(amount, playerId);
-        }
-      } catch (error) {
-        console.error('Payment error:', error);
-        alert(`Payment Error: ${error.message}`);
-      } finally {
-        btn.disabled = false;
-        document.getElementById('depositButtonText').textContent = 'Deposit Now';
-      }
-    }
-
-    // Hosted Payment Page flow (recommended)
-    async function initiateHostedPayment(amount, playerId) {
-      // Build success/failure URLs with order info
-      const currentUrl = window.location.href.split('?')[0];
-      const successUrl = `${currentUrl}?status=success&amount=${amount}&gems=${currentGemsAmount}&player=${encodeURIComponent(playerId)}`;
-      const failureUrl = `${currentUrl}?status=failed&amount=${amount}&player=${encodeURIComponent(playerId)}`;
-
-      const response = await fetch(`${config.apiEndpoint}/payments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`
-        },
-        body: JSON.stringify({
-          amount: amount,
-          currency: 'USD',
-          pay_currency: 'USDT',
-          order_id: `game_${playerId}_${Date.now()}`,
-          description: `Deposit ${amount} USDT for ${currentGemsAmount} gems`,
-          callback_url: config.webhookUrl || undefined,
-          success_url: successUrl,
-          failure_url: failureUrl
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        // Store pending transaction info
-        const pendingTx = {
-          id: data.data.payment_id || data.data.deposit_intent_id,
-          amount: amount,
-          gems: currentGemsAmount,
-          status: 'pending',
-          date: new Date().toISOString()
-        };
-        localStorage.setItem('pendingTransaction', JSON.stringify(pendingTx));
-        addToHistory(pendingTx);
+        const currentUrl = window.location.href.split('?')[0];
+        const gems = amount * GEMS_PER_USDT;
         
-        // Redirect to hosted payment page
-        const hostedUrl = data.data.hosted_payment_url || data.data.hosted_deposit_page_url;
-        if (hostedUrl) {
-          window.location.href = hostedUrl;
-        } else {
-          throw new Error('No hosted payment URL received');
-        }
-      } else {
-        throw new Error(data.error || 'Failed to create payment');
-      }
-    }
-
-    // Direct Payment flow (shows modal with QR code)
-    async function initiateDirectPayment(amount, playerId) {
-      const response = await fetch(`${config.apiEndpoint}/payments`, {
+        const response = await fetch(`${API_BASE}/payments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${config.apiKey}`
+            'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
             amount: amount,
             currency: 'USD',
             pay_currency: 'USDT',
-            order_id: playerId,
-            description: `Deposit ${amount} USDT for ${currentGemsAmount} gems`,
-            callback_url: config.webhookUrl || undefined
+            order_id: `game_${Date.now()}`,
+            description: `Purchase ${gems} gems`,
+            success_url: `${currentUrl}?success=1&gems=${gems}`,
+            failure_url: `${currentUrl}?failed=1`
           })
         });
 
         const data = await response.json();
         
+        if (!response.ok) {
+          throw new Error(data.error || 'API request failed');
+        }
+
         if (data.success && data.data) {
-          showPaymentModal(data.data);
+          const paymentUrl = data.data.hosted_payment_url || data.data.hosted_deposit_page_url;
+          if (paymentUrl) {
+            // Save pending gems for when user returns
+            localStorage.setItem('pendingGems', gems.toString());
+            // Redirect to payment page
+            window.location.href = paymentUrl;
+          } else {
+            throw new Error('No payment URL received');
+          }
         } else {
           throw new Error(data.error || 'Failed to create payment');
         }
       } catch (error) {
         console.error('Payment error:', error);
-        alert(`Payment Error: ${error.message}`);
+        alert('Error: ' + error.message);
       } finally {
         btn.disabled = false;
-        document.getElementById('depositButtonText').textContent = 'Deposit Now';
+        btnText.textContent = 'Deposit & Get Gems';
       }
     }
 
-    function showPaymentModal(paymentData) {
-      currentPaymentId = paymentData.payment_id || paymentData.deposit_intent_id;
-      
-      // Update modal content
-      document.getElementById('qrCode').src = paymentData.qr_code || 
-        `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${paymentData.address}`;
-      document.getElementById('cryptoAddress').textContent = paymentData.address;
-      document.getElementById('paymentAmount').textContent = 
-        `${paymentData.amount || paymentData.expected_amount} USDT`;
-      document.getElementById('modalGemsAmount').textContent = currentGemsAmount.toLocaleString();
-
-      // Show modal
-      document.getElementById('paymentModal').classList.add('active');
-
-      // Start timer
-      startPaymentTimer(paymentData.expires_at);
-
-      // Start status polling
-      startStatusPolling(currentPaymentId);
-
-      // Add to pending history
-      addToHistory({
-        id: currentPaymentId,
-        amount: currentDepositAmount,
-        gems: currentGemsAmount,
-        status: 'pending',
-        date: new Date().toISOString()
-      });
+    function showSuccess(gems) {
+      document.getElementById('successGems').textContent = gems.toLocaleString();
+      document.getElementById('successOverlay').classList.add('active');
     }
 
-    function startPaymentTimer(expiresAt) {
-      const updateTimer = () => {
-        const now = new Date();
-        const expires = new Date(expiresAt);
-        const diff = Math.max(0, expires - now);
-        
-        const minutes = Math.floor(diff / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-        
-        document.getElementById('paymentTimer').textContent = 
-          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-        if (diff <= 0) {
-          clearInterval(timerInterval);
-          handlePaymentExpired();
-        }
-      };
-
-      updateTimer();
-      timerInterval = setInterval(updateTimer, 1000);
+    function closeSuccess() {
+      document.getElementById('successOverlay').classList.remove('active');
     }
 
-    function startStatusPolling(paymentId) {
-      const checkStatus = async () => {
-        try {
-          const response = await fetch(`${config.apiEndpoint}/payments/${paymentId}`, {
-            headers: {
-              'Authorization': `Bearer ${config.apiKey}`
-            }
-          });
-
-          const data = await response.json();
-          
-          if (data.success && data.data) {
-            const status = data.data.status;
-            
-            if (status === 'CONFIRMED' || status === 'SETTLED') {
-              handlePaymentSuccess();
-            } else if (status === 'FAILED' || status === 'EXPIRED') {
-              handlePaymentFailed();
-            }
-          }
-        } catch (error) {
-          console.error('Status check error:', error);
-        }
-      };
-
-      paymentCheckInterval = setInterval(checkStatus, 5000);
-    }
-
-    function handlePaymentSuccess() {
-      clearInterval(paymentCheckInterval);
-      clearInterval(timerInterval);
-
-      const statusIcon = document.getElementById('statusIcon');
-      statusIcon.className = 'status-icon success';
-      statusIcon.innerHTML = `
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="2">
-          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-      `;
-
-      document.getElementById('statusTitle').textContent = 'Payment Successful!';
-      document.getElementById('statusMessage').textContent = 
-        `${currentGemsAmount.toLocaleString()} gems have been added to your account!`;
-      document.getElementById('paymentDetails').style.display = 'none';
-
-      // Update gem balance
-      const currentGems = parseInt(document.getElementById('currentGems').textContent.replace(/,/g, ''));
-      const newBalance = currentGems + currentGemsAmount;
-      document.getElementById('currentGems').textContent = newBalance.toLocaleString();
-      localStorage.setItem('gameGemBalance', newBalance.toString());
-
-      // Update history status
-      updateHistoryStatus(currentPaymentId, 'confirmed');
-
-      // Trigger gems animation
-      triggerGemsAnimation();
-
-      // Close modal after delay
-      setTimeout(closeModal, 3000);
-    }
-
-    function handlePaymentFailed() {
-      clearInterval(paymentCheckInterval);
-      clearInterval(timerInterval);
-
-      const statusIcon = document.getElementById('statusIcon');
-      statusIcon.className = 'status-icon failed';
-      statusIcon.innerHTML = `
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="15" y1="9" x2="9" y2="15"/>
-          <line x1="9" y1="9" x2="15" y2="15"/>
-        </svg>
-      `;
-
-      document.getElementById('statusTitle').textContent = 'Payment Failed';
-      document.getElementById('statusMessage').textContent = 
-        'There was an issue processing your payment. Please try again.';
-      document.getElementById('paymentDetails').style.display = 'none';
-
-      // Update history status
-      updateHistoryStatus(currentPaymentId, 'failed');
-    }
-
-    function handlePaymentExpired() {
-      clearInterval(paymentCheckInterval);
-
-      const statusIcon = document.getElementById('statusIcon');
-      statusIcon.className = 'status-icon failed';
-      statusIcon.innerHTML = `
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-      `;
-
-      document.getElementById('statusTitle').textContent = 'Payment Expired';
-      document.getElementById('statusMessage').textContent = 
-        'The payment window has expired. Please try again.';
-      document.getElementById('paymentDetails').style.display = 'none';
-
-      // Update history status
-      updateHistoryStatus(currentPaymentId, 'expired');
-    }
-
-    function closeModal() {
-      document.getElementById('paymentModal').classList.remove('active');
-      clearInterval(paymentCheckInterval);
-      clearInterval(timerInterval);
-      
-      // Reset modal state
-      document.getElementById('statusIcon').className = 'status-icon pending';
-      document.getElementById('statusIcon').innerHTML = `
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#feca57" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-      `;
-      document.getElementById('statusTitle').textContent = 'Awaiting Payment';
-      document.getElementById('statusMessage').textContent = 'Send the exact amount to the address below';
-      document.getElementById('paymentDetails').style.display = 'block';
-    }
-
-    function copyAddress() {
-      const address = document.getElementById('cryptoAddress').textContent;
-      navigator.clipboard.writeText(address).then(() => {
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => btn.textContent = originalText, 2000);
-      });
-    }
-
-    function triggerGemsAnimation() {
-      const container = document.getElementById('gemsAnimation');
-      container.classList.add('active');
-      container.innerHTML = '';
-
-      for (let i = 0; i < 30; i++) {
-        const gem = document.createElement('div');
-        gem.className = 'gem-particle';
-        gem.style.left = Math.random() * 100 + '%';
-        gem.style.animationDelay = Math.random() * 0.5 + 's';
-        gem.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-            <polyline points="2 17 12 22 22 17"/>
-            <polyline points="2 12 12 17 22 12"/>
-          </svg>
-        `;
-        container.appendChild(gem);
-      }
-
-      setTimeout(() => {
-        container.classList.remove('active');
-      }, 2500);
-    }
-
-    // History management
-    function addToHistory(entry) {
-      depositHistory.unshift(entry);
-      if (depositHistory.length > 10) {
-        depositHistory = depositHistory.slice(0, 10);
-      }
-      localStorage.setItem('depositHistory', JSON.stringify(depositHistory));
-      renderDepositHistory();
-    }
-
-    function updateHistoryStatus(paymentId, status) {
-      depositHistory = depositHistory.map(entry => {
-        if (entry.id === paymentId) {
-          return { ...entry, status };
-        }
-        return entry;
-      });
-      localStorage.setItem('depositHistory', JSON.stringify(depositHistory));
-      renderDepositHistory();
-    }
-
-    function renderDepositHistory() {
-      const container = document.getElementById('historyList');
-      
-      if (depositHistory.length === 0) {
-        container.innerHTML = '<div class="no-history">No deposits yet. Make your first deposit above!</div>';
-        return;
-      }
-
-      container.innerHTML = depositHistory.map(entry => `
-        <div class="history-item">
-          <div class="history-info">
-            <div class="history-amount">+${entry.amount} USDT</div>
-            <div class="history-date">${new Date(entry.date).toLocaleString()}</div>
-          </div>
-          <div class="history-gems">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-            </svg>
-            +${entry.gems.toLocaleString()}
-          </div>
-          <span class="history-status ${entry.status}">${entry.status.toUpperCase()}</span>
-        </div>
-      `).join('');
-    }
-
-    // Config management
-    function toggleConfig() {
-      const panel = document.getElementById('configPanel');
-      const toggle = document.getElementById('configToggle');
-      panel.classList.toggle('hidden');
-      toggle.style.display = panel.classList.contains('hidden') ? 'flex' : 'none';
-    }
-
-    function saveConfig() {
-      config.apiEndpoint = document.getElementById('apiEndpoint').value;
-      config.apiKey = document.getElementById('apiKey').value;
-      config.webhookUrl = document.getElementById('webhookUrl').value;
-      config.useHostedPage = document.getElementById('useHostedPage').checked;
-
-      localStorage.setItem('gameApiEndpoint', config.apiEndpoint);
-      localStorage.setItem('gameApiKey', config.apiKey);
-      localStorage.setItem('gameWebhookUrl', config.webhookUrl);
-      localStorage.setItem('gameUseHostedPage', config.useHostedPage.toString());
-
-      alert('Configuration saved!');
-      toggleConfig();
-    }
-
-    // Handle return from hosted payment page
-    function handlePaymentReturn() {
+    // Handle return from payment page
+    function handleReturn() {
       const params = new URLSearchParams(window.location.search);
-      const status = params.get('status');
       
-      if (!status) return;
-
-      const amount = parseFloat(params.get('amount')) || 0;
-      const gems = parseInt(params.get('gems')) || 0;
-      const player = params.get('player') || '';
-
-      // Clear URL params
-      window.history.replaceState({}, '', window.location.pathname);
-
-      if (status === 'success' && gems > 0) {
-        // Update gem balance
-        const currentGems = parseInt(document.getElementById('currentGems').textContent.replace(/,/g, '')) || 0;
-        const newBalance = currentGems + gems;
-        document.getElementById('currentGems').textContent = newBalance.toLocaleString();
-        localStorage.setItem('gameGemBalance', newBalance.toString());
-
-        // Update pending transaction in history
-        const pendingTx = JSON.parse(localStorage.getItem('pendingTransaction') || 'null');
-        if (pendingTx) {
-          updateHistoryStatus(pendingTx.id, 'confirmed');
-          localStorage.removeItem('pendingTransaction');
-        }
-
-        // Show success message
-        currentGemsAmount = gems;
-        triggerGemsAnimation();
+      if (params.get('success') === '1') {
+        const gems = parseInt(params.get('gems')) || parseInt(localStorage.getItem('pendingGems')) || 0;
         
-        setTimeout(() => {
-          alert(`🎉 Payment Successful!\n\n+${gems.toLocaleString()} gems have been added to your account!`);
-        }, 500);
-      } else if (status === 'failed') {
-        // Update pending transaction in history
-        const pendingTx = JSON.parse(localStorage.getItem('pendingTransaction') || 'null');
-        if (pendingTx) {
-          updateHistoryStatus(pendingTx.id, 'failed');
-          localStorage.removeItem('pendingTransaction');
+        if (gems > 0) {
+          gemBalance += gems;
+          localStorage.setItem('gameGemBalance', gemBalance.toString());
+          document.getElementById('gemBalance').textContent = gemBalance.toLocaleString();
+          localStorage.removeItem('pendingGems');
+          
+          // Clear URL and show success
+          window.history.replaceState({}, '', window.location.pathname);
+          showSuccess(gems);
         }
-
-        alert('Payment failed or was cancelled. Please try again.');
+      } else if (params.get('failed') === '1') {
+        localStorage.removeItem('pendingGems');
+        window.history.replaceState({}, '', window.location.pathname);
+        alert('Payment was not completed. Please try again.');
       }
     }
 
-    // Call on page load
-    handlePaymentReturn();
+    // Check for return on page load
+    handleReturn();
   </script>
 </body>
 </html>

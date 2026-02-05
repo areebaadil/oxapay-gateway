@@ -109,8 +109,23 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
       return errorResponse("Failed to create payment intent");
     }
 
-    // Generate hosted payment page URL
-    const hostedPageUrl = `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/deposit/${intent.id}`;
+    // Generate hosted payment page URL using the request origin or env var
+    const requestOrigin = req.headers.get("origin") || req.headers.get("referer");
+    let hostedPageUrl: string;
+    
+    // Try to get the app URL from env or construct from request
+    const appUrl = Deno.env.get("APP_URL");
+    if (appUrl) {
+      hostedPageUrl = `${appUrl}/deposit/${intent.id}`;
+    } else if (requestOrigin) {
+      // Extract base URL from origin/referer
+      const baseUrl = new URL(requestOrigin).origin;
+      hostedPageUrl = `${baseUrl}/deposit/${intent.id}`;
+    } else {
+      // Fallback: construct from supabase project ID  
+      const projectId = supabaseUrl.match(/https:\/\/([^.]+)/)?.[1] || "";
+      hostedPageUrl = `https://id-preview--${projectId}.lovable.app/deposit/${intent.id}`;
+    }
 
     // If success_url or failure_url provided, return hosted page URL (recommended flow)
     if (success_url || failure_url) {

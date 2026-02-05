@@ -33,6 +33,10 @@ export default function AdminTransactions() {
   const merchantNames = Object.fromEntries(
     (merchants || []).map(m => [m.id, m.name])
   );
+  
+  const merchantEmails = Object.fromEntries(
+    (merchants || []).map(m => [m.id, m.email])
+  );
 
   // Filter by search query
   const filteredTransactions = (transactions || []).filter(tx => {
@@ -182,6 +186,7 @@ export default function AdminTransactions() {
           transactions={tableTransactions}
           showMerchant
           merchantNames={merchantNames}
+          merchantEmails={merchantEmails}
           showActions
         />
 

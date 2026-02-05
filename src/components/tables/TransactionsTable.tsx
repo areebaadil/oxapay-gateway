@@ -33,6 +33,7 @@ interface TransactionsTableProps {
   transactions: Transaction[];
   showMerchant?: boolean;
   merchantNames?: Record<string, string>;
+  merchantEmails?: Record<string, string>;
   showActions?: boolean;
 }
 
@@ -40,6 +41,7 @@ export function TransactionsTable({
   transactions, 
   showMerchant = false,
   merchantNames = {},
+  merchantEmails = {},
   showActions = false,
 }: TransactionsTableProps) {
   const { toast } = useToast();
@@ -161,7 +163,7 @@ export function TransactionsTable({
                 </td>
                 <td>
                   <span className="text-sm text-muted-foreground">
-                    {tx.userReference}
+                    {merchantEmails[tx.merchantId] || tx.userReference}
                   </span>
                 </td>
                 <td>

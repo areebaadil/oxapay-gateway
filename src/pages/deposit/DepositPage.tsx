@@ -36,6 +36,8 @@ interface DepositIntent {
   deposit_address: string | null;
   expires_at: string;
   merchants: { name: string } | null;
+  success_url: string | null;
+  failure_url: string | null;
 }
 
 interface PaymentData {
@@ -118,6 +120,22 @@ export default function DepositPage() {
     return () => clearInterval(interval);
   }, [transaction?.id, step]);
 
+  // Auto-redirect after payment completion
+  useEffect(() => {
+    if (step === 'complete' && depositIntent?.success_url) {
+      const timer = setTimeout(() => {
+        window.location.href = depositIntent.success_url!;
+      }, 3000); // 3 second delay before auto-redirect
+      return () => clearTimeout(timer);
+    }
+    if (step === 'expired' && depositIntent?.failure_url) {
+      const timer = setTimeout(() => {
+        window.location.href = depositIntent.failure_url!;
+      }, 5000); // 5 second delay for expired
+      return () => clearTimeout(timer);
+    }
+  }, [step, depositIntent?.success_url, depositIntent?.failure_url]);
+
   // Countdown timer
   useEffect(() => {
     if (!paymentData?.expires_at) return;
@@ -170,6 +188,8 @@ export default function DepositPage() {
         deposit_address: data.deposit_address,
         expires_at: data.expires_at,
         merchants: data.merchants as { name: string } | null,
+        success_url: data.success_url,
+        failure_url: data.failure_url,
       });
 
       // Check for existing transaction
@@ -522,13 +542,24 @@ export default function DepositPage() {
                 </div>
               </div>
 
-              <Button 
-                className="mt-8" 
-                variant="outline"
-                onClick={() => window.close()}
-              >
-                Close Window
-              </Button>
+              {depositIntent?.success_url ? (
+                <div className="mt-8 space-y-2">
+                  <p className="text-sm text-muted-foreground">Redirecting you back...</p>
+                  <Button 
+                    onClick={() => window.location.href = depositIntent.success_url!}
+                  >
+                    Return to {depositIntent.merchants?.name || 'Merchant'}
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  className="mt-8" 
+                  variant="outline"
+                  onClick={() => window.close()}
+                >
+                  Close Window
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
@@ -547,12 +578,21 @@ export default function DepositPage() {
                 This payment link has expired. Please request a new payment.
               </p>
 
-              <Button 
-                variant="outline"
-                onClick={() => window.close()}
-              >
-                Close Window
-              </Button>
+              {depositIntent?.failure_url ? (
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = depositIntent.failure_url!}
+                >
+                  Return to {depositIntent.merchants?.name || 'Merchant'}
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline"
+                  onClick={() => window.close()}
+                >
+                  Close Window
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}

@@ -62,6 +62,7 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
   const oxapayApiKey = Deno.env.get("OXAPAY_MERCHANT_API_KEY");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
   if (req.method === "POST" && !paymentId) {
     // Create new payment
@@ -70,13 +71,23 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
     }
 
     const body = await req.json();
-    const { amount, currency = "USD", pay_currency, network, order_id, description, callback_url } = body;
+    const { 
+      amount, 
+      currency = "USD", 
+      pay_currency = "USDT", 
+      network, 
+      order_id, 
+      description, 
+      callback_url,
+      success_url,
+      failure_url 
+    } = body;
 
-    if (!amount || !pay_currency) {
-      return errorResponse("Required fields: amount, pay_currency");
+    if (!amount) {
+      return errorResponse("Required field: amount");
     }
 
-    // Create deposit intent
+    // Create deposit intent with redirect URLs
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     const { data: intent, error: intentError } = await supabase
       .from("deposit_intents")
@@ -86,6 +97,8 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
         coin: pay_currency.toUpperCase(),
         expected_amount: amount,
         callback_url: callback_url || null,
+        success_url: success_url || null,
+        failure_url: failure_url || null,
         expires_at: expiresAt.toISOString(),
       })
       .select()
@@ -96,7 +109,24 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
       return errorResponse("Failed to create payment intent");
     }
 
-    // Network mapping
+    // Generate hosted payment page URL
+    const hostedPageUrl = `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/deposit/${intent.id}`;
+
+    // If success_url or failure_url provided, return hosted page URL (recommended flow)
+    if (success_url || failure_url) {
+      return successResponse({
+        payment_id: intent.id,
+        deposit_intent_id: intent.id,
+        hosted_payment_url: hostedPageUrl,
+        hosted_deposit_page_url: hostedPageUrl,
+        coin: intent.coin,
+        expected_amount: amount,
+        expires_at: intent.expires_at,
+        merchant_name: merchant.merchantName,
+      }, 201);
+    }
+
+    // Direct API flow - create OxaPay payment immediately
     const networkMap: Record<string, string> = {
       BTC: "Bitcoin",
       ETH: "ERC20",
@@ -106,7 +136,6 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
       TRX: "TRC20",
     };
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const webhookUrl = `${supabaseUrl}/functions/v1/oxapay-webhook`;
 
     // Create OxaPay payment
@@ -177,6 +206,7 @@ async function handlePayments(req: Request, merchant: MerchantContext, paymentId
       qr_code: paymentData.qr_code,
       rate: paymentData.rate,
       expires_at: new Date(paymentData.expired_at * 1000).toISOString(),
+      hosted_payment_url: hostedPageUrl,
     }, 201);
   }
 

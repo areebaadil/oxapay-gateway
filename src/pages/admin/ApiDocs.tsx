@@ -129,7 +129,33 @@ const endpoints: Record<string, EndpointProps[]> = {
     {
       method: 'POST',
       path: '/payments',
-      description: 'Create a new payment request and get a blockchain deposit address',
+      description: 'Create a hosted payment page and redirect users to complete payment (Recommended)',
+      requestBody: {
+        amount: 100,
+        currency: 'USD',
+        pay_currency: 'USDT',
+        order_id: 'order_123',
+        description: 'Payment for Order #123',
+        callback_url: 'https://yoursite.com/webhook',
+        success_url: 'https://yoursite.com/payment/success',
+        failure_url: 'https://yoursite.com/payment/failed'
+      },
+      responseBody: {
+        success: true,
+        data: {
+          payment_id: 'uuid',
+          hosted_payment_url: 'https://gateway.com/deposit/uuid',
+          coin: 'USDT',
+          expected_amount: 100,
+          expires_at: '2024-01-08T12:00:00Z',
+          merchant_name: 'Your Store'
+        }
+      }
+    },
+    {
+      method: 'POST',
+      path: '/payments/direct',
+      description: 'Create payment and get blockchain address directly (for custom UI)',
       requestBody: {
         amount: 100,
         currency: 'USD',
@@ -383,28 +409,84 @@ export default function ApiDocs() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />
-              Supported Cryptocurrencies
+              Supported Cryptocurrency
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                { coin: 'BTC', name: 'Bitcoin', network: 'Bitcoin' },
-                { coin: 'ETH', name: 'Ethereum', network: 'ERC20' },
-                { coin: 'USDT', name: 'Tether', network: 'TRC20 / ERC20' },
-                { coin: 'USDC', name: 'USD Coin', network: 'ERC20' },
-                { coin: 'LTC', name: 'Litecoin', network: 'Litecoin' },
-                { coin: 'TRX', name: 'Tron', network: 'TRC20' },
-              ].map((c) => (
-                <div key={c.coin} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border">
-                  <Badge variant="outline" className="font-mono">{c.coin}</Badge>
-                  <div>
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.network}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border max-w-xs">
+              <Badge variant="outline" className="font-mono bg-[#26A17B]/20 text-[#26A17B] border-[#26A17B]/30">USDT</Badge>
+              <div>
+                <p className="text-sm font-medium">Tether</p>
+                <p className="text-xs text-muted-foreground">TRC-20 Network</p>
+              </div>
             </div>
+            <p className="text-sm text-muted-foreground mt-3">
+              Currently, only USDT on the TRC-20 network is supported for payments.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Hosted Payment Page */}
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ExternalLink className="h-5 w-5 text-primary" />
+              Hosted Payment Page (Recommended)
+            </CardTitle>
+            <CardDescription>
+              Redirect users to our secure, branded payment page for the best conversion rates
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+              <h4 className="font-semibold">Integration Flow</h4>
+              <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                <li>User clicks "Pay" on your site</li>
+                <li>Your backend calls <code className="text-primary">POST /payments</code></li>
+                <li>Redirect user to <code className="text-primary">hosted_payment_url</code></li>
+                <li>User completes payment on our page</li>
+                <li>User redirected to your <code className="text-primary">success_url</code> or <code className="text-primary">failure_url</code></li>
+                <li>You receive webhook notification (optional)</li>
+              </ol>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Redirect URLs</h4>
+              <div className="bg-muted/30 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex gap-2">
+                  <code className="text-primary">success_url</code>
+                  <span className="text-muted-foreground">- Where to redirect after successful payment</span>
+                </div>
+                <div className="flex gap-2">
+                  <code className="text-primary">failure_url</code>
+                  <span className="text-muted-foreground">- Where to redirect if payment fails or expires</span>
+                </div>
+              </div>
+            </div>
+
+            <CodeBlock 
+              code={`// Example: Create payment and redirect
+const response = await fetch('${BASE_URL}/payments', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer pk_your_api_key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 100,
+    currency: 'USD',
+    pay_currency: 'USDT',
+    order_id: 'order_123',
+    success_url: 'https://yoursite.com/payment/success?order=123',
+    failure_url: 'https://yoursite.com/payment/failed?order=123'
+  })
+});
+
+const { data } = await response.json();
+// Redirect user to hosted payment page
+window.location.href = data.hosted_payment_url;`} 
+              language="javascript" 
+            />
           </CardContent>
         </Card>
 

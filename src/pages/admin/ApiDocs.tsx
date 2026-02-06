@@ -15,7 +15,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -29,6 +30,7 @@ interface EndpointProps {
   requestBody?: object;
   responseBody: object;
   queryParams?: { name: string; type: string; description: string; required?: boolean }[];
+  notes?: string;
 }
 
 function CodeBlock({ code, language = 'json' }: { code: string; language?: string }) {
@@ -90,6 +92,13 @@ function EndpointCard({ endpoint }: { endpoint: EndpointProps }) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
+            {endpoint.notes && (
+              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+                <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                <span className="text-muted-foreground">{endpoint.notes}</span>
+              </div>
+            )}
+
             {endpoint.queryParams && endpoint.queryParams.length > 0 && (
               <div>
                 <h4 className="text-sm font-semibold mb-2">Query Parameters</h4>
@@ -130,6 +139,7 @@ const endpoints: Record<string, EndpointProps[]> = {
       method: 'POST',
       path: '/payments',
       description: 'Create a hosted payment page and redirect users to complete payment (Recommended)',
+      notes: 'When success_url or failure_url is provided, the API returns a hosted_payment_url. Without these, the API creates a direct OxaPay payment and returns the blockchain address.',
       requestBody: {
         amount: 100,
         currency: 'USD',
@@ -144,7 +154,9 @@ const endpoints: Record<string, EndpointProps[]> = {
         success: true,
         data: {
           payment_id: 'uuid',
+          deposit_intent_id: 'uuid',
           hosted_payment_url: 'https://gateway.com/deposit/uuid',
+          hosted_deposit_page_url: 'https://gateway.com/deposit/uuid',
           coin: 'USDT',
           expected_amount: 100,
           expires_at: '2024-01-08T12:00:00Z',
@@ -154,8 +166,9 @@ const endpoints: Record<string, EndpointProps[]> = {
     },
     {
       method: 'POST',
-      path: '/payments/direct',
-      description: 'Create payment and get blockchain address directly (for custom UI)',
+      path: '/payments (Direct Mode)',
+      description: 'Create payment and get blockchain address directly — do NOT pass success_url or failure_url',
+      notes: 'Direct mode is triggered by omitting success_url and failure_url. The API calls OxaPay immediately and returns the wallet address, QR code, and payment details for your custom UI.',
       requestBody: {
         amount: 100,
         currency: 'USD',
@@ -177,7 +190,8 @@ const endpoints: Record<string, EndpointProps[]> = {
           network: 'TRC20',
           qr_code: 'base64_qr_image',
           rate: 0.995,
-          expires_at: '2024-01-08T12:00:00Z'
+          expires_at: '2024-01-08T12:00:00Z',
+          hosted_payment_url: 'https://gateway.com/deposit/uuid'
         }
       }
     },
@@ -242,8 +256,8 @@ const endpoints: Record<string, EndpointProps[]> = {
       queryParams: [
         { name: 'limit', type: 'number', description: 'Number of results (default: 20)' },
         { name: 'offset', type: 'number', description: 'Pagination offset' },
-        { name: 'status', type: 'string', description: 'Filter by status' },
-        { name: 'coin', type: 'string', description: 'Filter by coin: BTC, ETH, USDT, etc.' }
+        { name: 'status', type: 'string', description: 'Filter by status: PENDING, CONFIRMED, FAILED, EXPIRED, SETTLED' },
+        { name: 'coin', type: 'string', description: 'Filter by coin (only USDT is currently supported)' }
       ],
       responseBody: {
         success: true,
@@ -291,7 +305,8 @@ const endpoints: Record<string, EndpointProps[]> = {
     {
       method: 'GET',
       path: '/balance',
-      description: 'Get current balance for all coins',
+      description: 'Get current balance calculated from ledger entries',
+      notes: 'Balance is calculated from all CREDIT and DEBIT ledger entries. Only USDT is supported for new deposits, but historical entries for other coins may appear.',
       responseBody: {
         success: true,
         data: {
@@ -301,15 +316,9 @@ const endpoints: Record<string, EndpointProps[]> = {
               amount: 1500.50,
               usd_value_at_deposit: 1500.50,
               current_usd_value: 1500.50
-            },
-            {
-              coin: 'BTC',
-              amount: 0.025,
-              usd_value_at_deposit: 1000,
-              current_usd_value: 1075
             }
           ],
-          total_usd_value: 2575.50
+          total_usd_value: 1500.50
         }
       }
     }
@@ -343,7 +352,7 @@ export default function ApiDocs() {
             Merchant API Documentation
           </h1>
           <p className="text-muted-foreground mt-1">
-            Complete reference for integrating with the payment gateway
+            Complete reference for integrating with the CryptoGate payment gateway
           </p>
         </div>
 
@@ -386,6 +395,16 @@ export default function ApiDocs() {
               </div>
             </div>
 
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+              <h4 className="text-sm font-semibold">API Key Format</h4>
+              <p className="text-sm text-muted-foreground">
+                API keys follow the format: <code className="text-primary">pk_&lt;8-char-prefix&gt;_&lt;64-char-secret&gt;</code>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                The key is hashed with SHA-256 before storage. You can only see the full key once during generation.
+              </p>
+            </div>
+
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <h4 className="text-sm font-semibold mb-2">Example Request (cURL)</h4>
               <CodeBlock 
@@ -396,7 +415,9 @@ export default function ApiDocs() {
     "amount": 100,
     "currency": "USD",
     "pay_currency": "USDT",
-    "order_id": "order_123"
+    "order_id": "order_123",
+    "success_url": "https://yoursite.com/success",
+    "failure_url": "https://yoursite.com/failed"
   }'`} 
                 language="bash" 
               />
@@ -421,51 +442,61 @@ export default function ApiDocs() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-3">
-              Currently, only USDT on the TRC-20 network is supported for payments.
+              Currently, only USDT on the TRC-20 network is supported for payments. All amounts are in USD.
             </p>
           </CardContent>
         </Card>
 
-        {/* Hosted Payment Page */}
+        {/* Integration Flows */}
         <Card className="border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ExternalLink className="h-5 w-5 text-primary" />
-              Hosted Payment Page (Recommended)
+              Integration Flows
             </CardTitle>
             <CardDescription>
-              Redirect users to our secure, branded payment page for the best conversion rates
+              Choose between Hosted Payment Page (recommended) or Direct API integration
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Hosted Flow */}
             <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-              <h4 className="font-semibold">Integration Flow</h4>
+              <h4 className="font-semibold flex items-center gap-2">
+                <Badge variant="secondary">Recommended</Badge>
+                Hosted Payment Page
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Pass <code className="text-primary">success_url</code> and <code className="text-primary">failure_url</code> to get a hosted payment page URL. The user is redirected to our branded page to complete payment.
+              </p>
               <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
                 <li>User clicks "Pay" on your site</li>
-                <li>Your backend calls <code className="text-primary">POST /payments</code></li>
-                <li>Redirect user to <code className="text-primary">hosted_payment_url</code></li>
-                <li>User completes payment on our page</li>
-                <li>User redirected to your <code className="text-primary">success_url</code> or <code className="text-primary">failure_url</code></li>
-                <li>You receive webhook notification (optional)</li>
+                <li>Your backend calls <code className="text-primary">POST /payments</code> with <code className="text-primary">success_url</code> and <code className="text-primary">failure_url</code></li>
+                <li>Redirect user to <code className="text-primary">hosted_payment_url</code> from the response</li>
+                <li>User completes payment on our hosted page (QR code + countdown timer)</li>
+                <li>User is redirected to your <code className="text-primary">success_url</code> or <code className="text-primary">failure_url</code></li>
+                <li>You receive a webhook notification at your configured <code className="text-primary">callback_url</code></li>
               </ol>
             </div>
 
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Redirect URLs</h4>
-              <div className="bg-muted/30 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex gap-2">
-                  <code className="text-primary">success_url</code>
-                  <span className="text-muted-foreground">- Where to redirect after successful payment</span>
-                </div>
-                <div className="flex gap-2">
-                  <code className="text-primary">failure_url</code>
-                  <span className="text-muted-foreground">- Where to redirect if payment fails or expires</span>
-                </div>
-              </div>
+            {/* Direct Flow */}
+            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+              <h4 className="font-semibold">Direct API (Custom UI)</h4>
+              <p className="text-sm text-muted-foreground">
+                Omit <code className="text-primary">success_url</code> and <code className="text-primary">failure_url</code> to receive the blockchain wallet address, QR code, and payment details directly. Build your own payment UI.
+              </p>
+              <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                <li>Your backend calls <code className="text-primary">POST /payments</code> without redirect URLs</li>
+                <li>You receive <code className="text-primary">address</code>, <code className="text-primary">qr_code</code>, and <code className="text-primary">amount</code> in the response</li>
+                <li>Display QR code and address in your own UI</li>
+                <li>Poll <code className="text-primary">GET /payments/&#123;payment_id&#125;</code> or wait for webhook</li>
+              </ol>
             </div>
 
-            <CodeBlock 
-              code={`// Example: Create payment and redirect
+            {/* Hosted Example */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Hosted Flow Example (JavaScript)</h4>
+              <CodeBlock 
+                code={`// Example: Create payment and redirect to hosted page
 const response = await fetch('${BASE_URL}/payments', {
   method: 'POST',
   headers: {
@@ -485,8 +516,36 @@ const response = await fetch('${BASE_URL}/payments', {
 const { data } = await response.json();
 // Redirect user to hosted payment page
 window.location.href = data.hosted_payment_url;`} 
-              language="javascript" 
-            />
+                language="javascript" 
+              />
+            </div>
+
+            {/* Direct Example */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Direct Flow Example (JavaScript)</h4>
+              <CodeBlock 
+                code={`// Example: Direct API — get wallet address for custom UI
+const response = await fetch('${BASE_URL}/payments', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer pk_your_api_key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 50,
+    currency: 'USD',
+    pay_currency: 'USDT',
+    order_id: 'order_456',
+    callback_url: 'https://yoursite.com/api/webhook'
+  })
+});
+
+const { data } = await response.json();
+// Use data.address, data.qr_code, data.amount in your UI
+console.log('Send', data.amount, 'USDT to', data.address);`} 
+                language="javascript" 
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -550,7 +609,7 @@ window.location.href = data.hosted_payment_url;`}
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              When a payment status changes, we'll send a POST request to your configured webhook URL with the following payload:
+              When a payment status changes, we'll send a POST request to your configured webhook URL (set via <code className="text-primary">callback_url</code> in the payment request or your merchant webhook URL) with the following payload:
             </p>
             <CodeBlock code={JSON.stringify({
               event: 'payment.confirmed',
@@ -573,6 +632,73 @@ window.location.href = data.hosted_payment_url;`}
                 <li><code className="text-primary">payment.expired</code> - Payment address expired</li>
               </ul>
             </div>
+
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <h4 className="text-sm font-semibold mb-2">Webhook Retry Policy</h4>
+              <p className="text-sm text-muted-foreground">
+                Failed webhook deliveries are retried automatically. You can monitor delivery attempts and response status in the admin Webhook Logs page.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Request Body Fields Reference */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Request Fields Reference</CardTitle>
+            <CardDescription>
+              Complete list of fields for <code>POST /payments</code>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted/30 rounded-lg p-3 space-y-3 text-sm">
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">amount</code>
+                <Badge variant="outline" className="text-xs">number</Badge>
+                <Badge variant="secondary" className="text-xs">required</Badge>
+                <span className="text-muted-foreground">Payment amount in the specified currency</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">currency</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Fiat currency code (default: "USD")</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">pay_currency</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Cryptocurrency to pay with (default: "USDT", only USDT supported)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">network</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Blockchain network (default: "TRC20")</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">order_id</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Your internal order or reference ID</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">description</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Human-readable description for the payment</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">callback_url</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">URL for webhook notifications on payment status changes</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">success_url</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Redirect URL after successful payment (enables hosted page flow)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="font-mono text-primary min-w-[120px]">failure_url</code>
+                <Badge variant="outline" className="text-xs">string</Badge>
+                <span className="text-muted-foreground">Redirect URL after failed/expired payment (enables hosted page flow)</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -586,20 +712,37 @@ window.location.href = data.hosted_payment_url;`}
           </CardHeader>
           <CardContent className="space-y-4">
             <CodeBlock code={JSON.stringify({
-              error: 'Invalid API key'
+              error: 'Description of the error'
             }, null, 2)} />
             
             <div className="p-4 bg-muted/50 rounded-lg">
               <h4 className="text-sm font-semibold mb-2">HTTP Status Codes</h4>
               <ul className="text-sm space-y-1 text-muted-foreground">
                 <li><code className="text-green-500">200</code> - Success</li>
-                <li><code className="text-green-500">201</code> - Resource created</li>
-                <li><code className="text-yellow-500">400</code> - Bad request / validation error</li>
-                <li><code className="text-yellow-500">401</code> - Unauthorized / invalid API key</li>
-                <li><code className="text-yellow-500">404</code> - Resource not found</li>
-                <li><code className="text-red-500">500</code> - Internal server error</li>
+                <li><code className="text-green-500">201</code> - Payment created successfully</li>
+                <li><code className="text-yellow-500">400</code> - Bad request / validation error (e.g., missing amount, unsupported coin)</li>
+                <li><code className="text-yellow-500">401</code> - Unauthorized / invalid or missing API key</li>
+                <li><code className="text-yellow-500">404</code> - Resource not found / unknown endpoint</li>
+                <li><code className="text-yellow-500">405</code> - Method not allowed</li>
+                <li><code className="text-red-500">500</code> - Internal server error / payment processor failure</li>
               </ul>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Rate Limits & Best Practices */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Best Practices</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+              <li>Always verify payment status via <code className="text-primary">GET /payments/&#123;payment_id&#125;</code> before fulfilling orders — do not rely solely on redirect URLs.</li>
+              <li>Use <code className="text-primary">callback_url</code> webhooks for server-to-server confirmation of payment status.</li>
+              <li>Store the <code className="text-primary">payment_id</code> returned from <code className="text-primary">POST /payments</code> to track and query payment status.</li>
+              <li>Payments expire after 1 hour. Create a new payment if the previous one expires.</li>
+              <li>Keep your API key secret. Never expose it in frontend code — always call the API from your backend.</li>
+            </ul>
           </CardContent>
         </Card>
       </div>

@@ -458,11 +458,11 @@ export default function DepositPage() {
                 <p className="text-sm text-muted-foreground mt-1">≈ ${expectedAmount.toLocaleString()} USD</p>
               </div>
 
-              {/* QR Code */}
+              {/* QR Code - plain address only */}
               <div className="flex justify-center">
-                {paymentData?.qr_code ? (
+                {paymentData?.address ? (
                   <img 
-                    src={paymentData.qr_code} 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentData.address)}`}
                     alt="Payment QR Code" 
                     className="w-48 h-48 rounded-xl border border-border/50"
                   />

@@ -35,7 +35,7 @@ interface DepositIntent {
   expected_amount: number;
   deposit_address: string | null;
   expires_at: string;
-  merchants: { name: string } | null;
+  merchant_name: string | null;
   success_url: string | null;
   failure_url: string | null;
 }
@@ -80,58 +80,63 @@ export default function DepositPage() {
     if (intentId) {
       loadDepositIntent();
     } else {
-      // Demo mode - no intent ID
       setStep('select');
     }
   }, [intentId]);
 
-  // Poll for transaction status updates
+  // Poll for transaction status updates (public RLS policy allows reading by deposit_intent_id)
   useEffect(() => {
-    if (!transaction?.id || step === 'complete' || step === 'expired') return;
+    if (!intentId || !transaction?.id || step === 'complete' || step === 'expired' || step === 'error') return;
 
     const interval = setInterval(async () => {
-      const { data } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', transaction.id)
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('deposit_intent_id', intentId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (data) {
-        setTransaction({
-          id: data.id,
-          status: data.status,
-          crypto_amount: Number(data.crypto_amount),
-          usd_value: Number(data.usd_value),
-          tx_hash: data.tx_hash,
-          confirmed_at: data.confirmed_at,
-        });
+        if (data) {
+          setTransaction({
+            id: data.id,
+            status: data.status,
+            crypto_amount: Number(data.crypto_amount),
+            usd_value: Number(data.usd_value),
+            tx_hash: data.tx_hash,
+            confirmed_at: data.confirmed_at,
+          });
 
-        if (data.status === 'CONFIRMED') {
-          setStep('complete');
-        } else if (data.status === 'EXPIRED') {
-          setStep('expired');
-        } else if (data.status === 'FAILED') {
-          setError('Payment failed');
-          setStep('error');
+          if (data.status === 'CONFIRMED') {
+            setStep('complete');
+          } else if (data.status === 'EXPIRED') {
+            setStep('expired');
+          } else if (data.status === 'FAILED') {
+            setError('Payment failed');
+            setStep('error');
+          }
         }
+      } catch (err) {
+        console.error('Error polling transaction status:', err);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [transaction?.id, step]);
+  }, [intentId, transaction?.id, step]);
 
   // Auto-redirect after payment completion
   useEffect(() => {
     if (step === 'complete' && depositIntent?.success_url) {
       const timer = setTimeout(() => {
         window.location.href = depositIntent.success_url!;
-      }, 3000); // 3 second delay before auto-redirect
+      }, 3000);
       return () => clearTimeout(timer);
     }
     if (step === 'expired' && depositIntent?.failure_url) {
       const timer = setTimeout(() => {
         window.location.href = depositIntent.failure_url!;
-      }, 5000); // 5 second delay for expired
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [step, depositIntent?.success_url, depositIntent?.failure_url]);
@@ -163,13 +168,14 @@ export default function DepositPage() {
 
   const loadDepositIntent = async () => {
     try {
-      const { data, error } = await supabase
+      // Public RLS policy allows reading deposit_intents by ID
+      const { data, error: fetchError } = await supabase
         .from('deposit_intents')
         .select('*, merchants(name)')
-        .eq('id', intentId)
+        .eq('id', intentId!)
         .maybeSingle();
 
-      if (error || !data) {
+      if (fetchError || !data) {
         setError('Deposit intent not found');
         setStep('error');
         return;
@@ -177,6 +183,16 @@ export default function DepositPage() {
 
       // Check if expired
       if (new Date(data.expires_at) < new Date()) {
+        setDepositIntent({
+          id: data.id,
+          coin: data.coin,
+          expected_amount: Number(data.expected_amount),
+          deposit_address: data.deposit_address,
+          expires_at: data.expires_at,
+          merchant_name: (data.merchants as { name: string } | null)?.name || null,
+          success_url: data.success_url,
+          failure_url: data.failure_url,
+        });
         setStep('expired');
         return;
       }
@@ -187,16 +203,16 @@ export default function DepositPage() {
         expected_amount: Number(data.expected_amount),
         deposit_address: data.deposit_address,
         expires_at: data.expires_at,
-        merchants: data.merchants as { name: string } | null,
+        merchant_name: (data.merchants as { name: string } | null)?.name || null,
         success_url: data.success_url,
         failure_url: data.failure_url,
       });
 
-      // Check for existing transaction
+      // Check for existing transaction (public RLS allows reading by deposit_intent_id)
       const { data: txData } = await supabase
         .from('transactions')
         .select('*')
-        .eq('deposit_intent_id', intentId)
+        .eq('deposit_intent_id', intentId!)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -250,7 +266,6 @@ export default function DepositPage() {
     setSelectedCoin(coin);
     
     if (!intentId) {
-      // Demo mode - just show UI
       setStep('payment');
       return;
     }
@@ -323,7 +338,7 @@ export default function DepositPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const merchantName = depositIntent?.merchants?.name || 'Demo Merchant';
+  const merchantName = depositIntent?.merchant_name || 'Demo Merchant';
   const expectedAmount = depositIntent?.expected_amount || 100;
   const cryptoAmount = paymentData?.pay_amount || 
     (selectedCoin ? (expectedAmount / (exchangeRates[selectedCoin] || 1)).toFixed(8) : '0');
@@ -548,7 +563,7 @@ export default function DepositPage() {
                   <Button 
                     onClick={() => window.location.href = depositIntent.success_url!}
                   >
-                    Return to {depositIntent.merchants?.name || 'Merchant'}
+                    Return to {depositIntent.merchant_name || 'Merchant'}
                   </Button>
                 </div>
               ) : (
@@ -583,7 +598,7 @@ export default function DepositPage() {
                   variant="outline"
                   onClick={() => window.location.href = depositIntent.failure_url!}
                 >
-                  Return to {depositIntent.merchants?.name || 'Merchant'}
+                  Return to {depositIntent.merchant_name || 'Merchant'}
                 </Button>
               ) : (
                 <Button 

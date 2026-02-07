@@ -27,10 +27,10 @@ serve(async (req) => {
       );
     }
 
-    // Fetch deposit intent with merchant details
+    // Fetch deposit intent with merchant details (use correct column names)
     const { data: intent, error: intentError } = await supabase
       .from("deposit_intents")
-      .select("*, merchants(name, fee_percentage)")
+      .select("*, merchants(name, deposit_fee_percentage)")
       .eq("id", intentId)
       .maybeSingle();
 
@@ -72,12 +72,15 @@ serve(async (req) => {
             expires_at: intent.expires_at,
             is_expired: isExpired,
             merchant_name: intent.merchants?.name,
+            success_url: intent.success_url,
+            failure_url: intent.failure_url,
           },
           transaction: transaction ? {
             id: transaction.id,
             status: transaction.status,
             crypto_amount: transaction.crypto_amount,
             usd_value: transaction.usd_value,
+            exchange_rate: transaction.exchange_rate,
             tx_hash: transaction.tx_hash,
             confirmed_at: transaction.confirmed_at,
           } : null,

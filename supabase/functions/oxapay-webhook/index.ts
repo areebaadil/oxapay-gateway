@@ -37,7 +37,6 @@ async function validateHmacSignature(payload: string, receivedHmac: string, secr
   const keyData = encoder.encode(secretKey);
   const data = encoder.encode(payload);
   
-  // Import key for HMAC-SHA512
   const key = await crypto.subtle.importKey(
     "raw",
     keyData,
@@ -46,10 +45,7 @@ async function validateHmacSignature(payload: string, receivedHmac: string, secr
     ["sign"]
   );
   
-  // Calculate HMAC
   const signature = await crypto.subtle.sign("HMAC", key, data);
-  
-  // Convert to hex string
   const hashArray = Array.from(new Uint8Array(signature));
   const calculatedHmac = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   
@@ -73,8 +69,33 @@ function mapStatus(oxaStatus: OxaPayStatus): "PENDING" | "CONFIRMED" | "FAILED" 
   }
 }
 
+// Send webhook to a URL and return the response status
+async function sendWebhook(
+  url: string,
+  eventType: string,
+  payload: Record<string, unknown>,
+  transactionId: string,
+): Promise<number | null> {
+  let responseStatus: number | null = null;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Event": eventType,
+        "X-Webhook-ID": transactionId,
+      },
+      body: JSON.stringify(payload),
+    });
+    responseStatus = response.status;
+    console.log(`Webhook sent to ${url}, status: ${responseStatus}`);
+  } catch (err) {
+    console.error(`Error sending webhook to ${url}:`, err);
+  }
+  return responseStatus;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -149,7 +170,6 @@ serve(async (req) => {
 
     if (!transaction) {
       console.error("Transaction not found for orderId:", orderId);
-      // Still return 200 to prevent OxaPay retries
       return new Response("ok", { status: 200 });
     }
 
@@ -164,8 +184,6 @@ serve(async (req) => {
 
     if (newStatus === "CONFIRMED") {
       updateData.confirmed_at = new Date().toISOString();
-      
-      // Update crypto amount if different (actual paid amount)
       if (payAmount) {
         updateData.crypto_amount = parseFloat(payAmount);
       }
@@ -183,11 +201,29 @@ serve(async (req) => {
 
     console.log(`Transaction ${transaction.id} updated to status: ${newStatus}`);
 
+    // Extract deposit intent and merchant info
+    const depositIntent = transaction.deposit_intents as {
+      callback_url?: string | null;
+      success_url?: string | null;
+      failure_url?: string | null;
+      merchants?: {
+        deposit_fee_percentage?: number;
+        webhook_url?: string | null;
+      } | null;
+    } | null;
+
+    const merchant = depositIntent?.merchants;
+    const callbackUrl = depositIntent?.callback_url;
+    const merchantWebhookUrl = merchant?.webhook_url;
+
+    // Determine all webhook URLs to notify (deduplicated)
+    const webhookUrls = new Set<string>();
+    if (merchantWebhookUrl) webhookUrls.add(merchantWebhookUrl);
+    if (callbackUrl) webhookUrls.add(callbackUrl);
+
     // If payment is CONFIRMED, create ledger entries
     if (newStatus === "CONFIRMED" && transaction.status !== "CONFIRMED") {
-      const depositIntent = transaction.deposit_intents as { merchants?: { fee_percentage?: number; webhook_url?: string } } | null;
-      const merchant = depositIntent?.merchants;
-      const feePercentage = merchant?.fee_percentage || 1.5;
+      const feePercentage = merchant?.deposit_fee_percentage || 1.5;
       const cryptoAmount = parseFloat(payAmount || String(transaction.crypto_amount));
       const usdValue = parseFloat(price || String(transaction.usd_value));
       const feeAmount = cryptoAmount * (feePercentage / 100);
@@ -195,7 +231,6 @@ serve(async (req) => {
 
       // Create ledger entries (double-entry style)
       const ledgerEntries = [
-        // Merchant gross credit (full deposit)
         {
           transaction_id: transaction.id,
           merchant_id: transaction.merchant_id,
@@ -206,7 +241,6 @@ serve(async (req) => {
           usd_value_at_time: usdValue,
           description: `Deposit from ${transaction.user_reference}`,
         },
-        // Merchant fee debit
         {
           transaction_id: transaction.id,
           merchant_id: transaction.merchant_id,
@@ -243,41 +277,24 @@ serve(async (req) => {
         },
       });
 
-      // Send webhook to merchant if configured
-      if (merchant?.webhook_url) {
-        const webhookPayload = {
-          event: "payment.confirmed",
-          payment_id: orderId,
-          transaction_id: transaction.id,
-          status: "CONFIRMED",
-          coin: transaction.coin,
-          crypto_amount: cryptoAmount,
-          usd_value: usdValue,
-          tx_hash: txID,
-          user_reference: transaction.user_reference,
-          confirmed_at: new Date().toISOString(),
-        };
+      // Send webhook to all configured URLs
+      const webhookPayload = {
+        event: "payment.confirmed",
+        payment_id: orderId,
+        transaction_id: transaction.id,
+        status: "CONFIRMED",
+        coin: transaction.coin,
+        crypto_amount: cryptoAmount,
+        usd_value: usdValue,
+        tx_hash: txID,
+        user_reference: transaction.user_reference,
+        confirmed_at: new Date().toISOString(),
+      };
 
-        let responseStatus: number | null = null;
+      for (const url of webhookUrls) {
+        const responseStatus = await sendWebhook(url, "payment.confirmed", webhookPayload, transaction.id);
         
-        try {
-          const webhookResponse = await fetch(merchant.webhook_url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Webhook-Event": "payment.confirmed",
-              "X-Webhook-ID": transaction.id,
-            },
-            body: JSON.stringify(webhookPayload),
-          });
-
-          responseStatus = webhookResponse.status;
-          console.log(`Merchant webhook sent to ${merchant.webhook_url}, status: ${responseStatus}`);
-        } catch (webhookError) {
-          console.error("Error sending merchant webhook:", webhookError);
-        }
-
-        // Log webhook attempt (will be retried if failed)
+        // Log webhook attempt
         await supabase.from("webhook_logs").insert({
           merchant_id: transaction.merchant_id,
           event_type: "payment.confirmed",
@@ -290,38 +307,19 @@ serve(async (req) => {
 
     // Handle other status changes (failed, expired)
     if (newStatus === "FAILED" || newStatus === "EXPIRED") {
-      const depositIntent = transaction.deposit_intents as { merchants?: { webhook_url?: string } } | null;
-      const merchant = depositIntent?.merchants;
-      
-      if (merchant?.webhook_url) {
-        const eventType = newStatus === "FAILED" ? "payment.failed" : "payment.expired";
-        const webhookPayload = {
-          event: eventType,
-          payment_id: orderId,
-          transaction_id: transaction.id,
-          status: newStatus,
-          coin: transaction.coin,
-          user_reference: transaction.user_reference,
-          timestamp: new Date().toISOString(),
-        };
+      const eventType = newStatus === "FAILED" ? "payment.failed" : "payment.expired";
+      const webhookPayload = {
+        event: eventType,
+        payment_id: orderId,
+        transaction_id: transaction.id,
+        status: newStatus,
+        coin: transaction.coin,
+        user_reference: transaction.user_reference,
+        timestamp: new Date().toISOString(),
+      };
 
-        let responseStatus: number | null = null;
-        
-        try {
-          const webhookResponse = await fetch(merchant.webhook_url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Webhook-Event": eventType,
-              "X-Webhook-ID": transaction.id,
-            },
-            body: JSON.stringify(webhookPayload),
-          });
-
-          responseStatus = webhookResponse.status;
-        } catch (webhookError) {
-          console.error("Error sending merchant webhook:", webhookError);
-        }
+      for (const url of webhookUrls) {
+        const responseStatus = await sendWebhook(url, eventType, webhookPayload, transaction.id);
 
         await supabase.from("webhook_logs").insert({
           merchant_id: transaction.merchant_id,
@@ -333,14 +331,12 @@ serve(async (req) => {
       }
     }
 
-    // Return OK to OxaPay
     return new Response("ok", { 
       status: 200,
       headers: { "Content-Type": "text/plain" }
     });
   } catch (error) {
     console.error("Error in oxapay-webhook:", error);
-    // Still return 200 to prevent excessive retries
     return new Response("ok", { status: 200 });
   }
 });

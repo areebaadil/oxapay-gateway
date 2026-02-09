@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { TransactionsTable } from '@/components/tables/TransactionsTable';
-import { mockTransactions } from '@/lib/mock-data';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Filter, Download, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,37 +14,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CoinType, TransactionStatus } from '@/types';
 
 export default function MerchantTransactions() {
-  const merchantId = 'merch_001';
+  const { merchantId } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'ALL'>('ALL');
-  const [coinFilter, setCoinFilter] = useState<CoinType | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [coinFilter, setCoinFilter] = useState('ALL');
 
-  const merchantTransactions = mockTransactions.filter(tx => tx.merchantId === merchantId);
-
-  const filteredTransactions = merchantTransactions.filter(tx => {
-    if (statusFilter !== 'ALL' && tx.status !== statusFilter) return false;
-    if (coinFilter !== 'ALL' && tx.coin !== coinFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        tx.id.toLowerCase().includes(query) ||
-        tx.userReference.toLowerCase().includes(query) ||
-        tx.txHash?.toLowerCase().includes(query)
-      );
-    }
-    return true;
+  const { data: transactions, isLoading } = useTransactions({
+    status: statusFilter,
+    coin: coinFilter,
+    merchantId: merchantId || undefined,
   });
 
+  // Filter by search query
+  const filteredTransactions = (transactions || []).filter(tx => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      tx.id.toLowerCase().includes(query) ||
+      tx.user_reference.toLowerCase().includes(query) ||
+      tx.tx_hash?.toLowerCase().includes(query)
+    );
+  });
+
+  // Transform for table component (camelCase)
+  const tableTransactions = filteredTransactions.map(tx => ({
+    id: tx.id,
+    merchantId: tx.merchant_id,
+    depositIntentId: tx.deposit_intent_id || '',
+    coin: tx.coin,
+    cryptoAmount: Number(tx.crypto_amount),
+    usdValue: Number(tx.usd_value),
+    exchangeRate: Number(tx.exchange_rate),
+    status: tx.status,
+    txHash: tx.tx_hash,
+    userReference: tx.user_reference,
+    createdAt: new Date(tx.created_at),
+    confirmedAt: tx.confirmed_at ? new Date(tx.confirmed_at) : null,
+  }));
+
+  const allTransactions = transactions || [];
   const statusCounts = {
-    ALL: merchantTransactions.length,
-    PENDING: merchantTransactions.filter(tx => tx.status === 'PENDING').length,
-    CONFIRMED: merchantTransactions.filter(tx => tx.status === 'CONFIRMED').length,
-    FAILED: merchantTransactions.filter(tx => tx.status === 'FAILED').length,
-    SETTLED: merchantTransactions.filter(tx => tx.status === 'SETTLED').length,
+    ALL: allTransactions.length,
+    PENDING: allTransactions.filter(tx => tx.status === 'PENDING').length,
+    CONFIRMED: allTransactions.filter(tx => tx.status === 'CONFIRMED').length,
+    FAILED: allTransactions.filter(tx => tx.status === 'FAILED').length,
+    SETTLED: allTransactions.filter(tx => tx.status === 'SETTLED').length,
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="merchant" title="Transactions">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="merchant" title="Transactions">
@@ -101,18 +129,13 @@ export default function MerchantTransactions() {
                 />
               </div>
               
-              <Select value={coinFilter} onValueChange={(v) => setCoinFilter(v as CoinType | 'ALL')}>
+              <Select value={coinFilter} onValueChange={setCoinFilter}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Coin" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Coins</SelectItem>
-                  <SelectItem value="BTC">BTC</SelectItem>
-                  <SelectItem value="ETH">ETH</SelectItem>
                   <SelectItem value="USDT">USDT</SelectItem>
-                  <SelectItem value="USDC">USDC</SelectItem>
-                  <SelectItem value="LTC">LTC</SelectItem>
-                  <SelectItem value="TRX">TRX</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -120,16 +143,16 @@ export default function MerchantTransactions() {
         </Card>
 
         {/* Transactions Table */}
-        <TransactionsTable transactions={filteredTransactions} />
+        <TransactionsTable transactions={tableTransactions} />
 
         {/* Pagination */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {filteredTransactions.length} of {merchantTransactions.length} transactions
+            Showing {filteredTransactions.length} transactions
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled>Previous</Button>
-            <Button variant="outline" size="sm">Next</Button>
+            <Button variant="outline" size="sm" disabled>Next</Button>
           </div>
         </div>
       </div>

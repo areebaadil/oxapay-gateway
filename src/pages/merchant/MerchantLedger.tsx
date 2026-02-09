@@ -1,45 +1,60 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { mockLedgerEntries, exchangeRates } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CoinBadge } from '@/components/ui/CoinBadge';
 import { formatDistanceToNow } from 'date-fns';
+import { useLedgerEntries } from '@/hooks/useLedger';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
   Download,
   Wallet,
   TrendingUp,
-  Minus
+  Minus,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CoinType } from '@/types';
 
 export default function MerchantLedger() {
-  const merchantId = 'merch_001';
-  const merchantEntries = mockLedgerEntries.filter(e => e.merchantId === merchantId);
+  const { merchantId } = useAuth();
+  const { data: entries, isLoading } = useLedgerEntries(merchantId || undefined);
+  const { data: exchangeRates } = useExchangeRates();
 
   // Calculate balances by coin
-  const balancesByCoin = merchantEntries.reduce((acc, entry) => {
+  const balancesByCoin = (entries || []).reduce((acc, entry) => {
     const coin = entry.coin;
     if (!acc[coin]) {
       acc[coin] = { credits: 0, debits: 0 };
     }
-    if (entry.entryType === 'CREDIT') {
-      acc[coin].credits += entry.amount;
+    if (entry.entry_type === 'CREDIT') {
+      acc[coin].credits += Number(entry.amount);
     } else {
-      acc[coin].debits += entry.amount;
+      acc[coin].debits += Number(entry.amount);
     }
     return acc;
-  }, {} as Record<CoinType, { credits: number; debits: number }>);
+  }, {} as Record<string, { credits: number; debits: number }>);
+
+  const rateMap = exchangeRates?.ratesMap || {};
 
   const coinBalances = Object.entries(balancesByCoin).map(([coin, { credits, debits }]) => ({
-    coin: coin as CoinType,
+    coin: coin as 'BTC' | 'ETH' | 'USDT' | 'USDC' | 'LTC' | 'TRX',
     balance: credits - debits,
-    usdValue: (credits - debits) * exchangeRates[coin as CoinType],
+    usdValue: (credits - debits) * (rateMap[coin] || 1),
   }));
 
   const totalUsdBalance = coinBalances.reduce((sum, b) => sum + b.usdValue, 0);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="merchant" title="Ledger">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="merchant" title="Ledger">
@@ -100,23 +115,23 @@ export default function MerchantLedger() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {merchantEntries.map((entry, index) => (
+              {(entries || []).map((entry, index) => (
                 <div 
                   key={entry.id}
                   className={cn(
                     "flex items-center justify-between p-4 rounded-lg border border-border/50 bg-muted/10 animate-fade-in",
-                    entry.entryType === 'CREDIT' ? 'hover:bg-status-confirmed/5' : 'hover:bg-status-pending/5'
+                    entry.entry_type === 'CREDIT' ? 'hover:bg-status-confirmed/5' : 'hover:bg-status-pending/5'
                   )}
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "rounded-full p-2",
-                      entry.entryType === 'CREDIT' 
+                      entry.entry_type === 'CREDIT' 
                         ? 'bg-status-confirmed/10' 
                         : 'bg-status-pending/10'
                     )}>
-                      {entry.entryType === 'CREDIT' ? (
+                      {entry.entry_type === 'CREDIT' ? (
                         <ArrowDownRight className="h-5 w-5 text-status-confirmed" />
                       ) : entry.category === 'FEE' ? (
                         <Minus className="h-5 w-5 text-status-pending" />
@@ -131,9 +146,9 @@ export default function MerchantLedger() {
                         <CoinBadge coin={entry.coin} showIcon={false} />
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-mono text-xs">{entry.transactionId}</span>
+                        <span className="font-mono text-xs">{entry.transaction_id.slice(0, 8)}...</span>
                         <span>•</span>
-                        <span>{formatDistanceToNow(entry.createdAt, { addSuffix: true })}</span>
+                        <span>{formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}</span>
                       </div>
                     </div>
                   </div>
@@ -141,19 +156,19 @@ export default function MerchantLedger() {
                   <div className="text-right">
                     <p className={cn(
                       "font-mono font-semibold text-lg",
-                      entry.entryType === 'CREDIT' ? 'text-status-confirmed' : 'text-status-pending'
+                      entry.entry_type === 'CREDIT' ? 'text-status-confirmed' : 'text-status-pending'
                     )}>
-                      {entry.entryType === 'CREDIT' ? '+' : '-'}{entry.amount.toFixed(6)} {entry.coin}
+                      {entry.entry_type === 'CREDIT' ? '+' : '-'}{Number(entry.amount).toFixed(6)} {entry.coin}
                     </p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      ${entry.usdValueAtTime.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${Number(entry.usd_value_at_time).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
             
-            {merchantEntries.length === 0 && (
+            {(!entries || entries.length === 0) && (
               <div className="text-center py-12 text-muted-foreground">
                 No ledger entries yet
               </div>

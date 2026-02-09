@@ -86,7 +86,7 @@ export default function DepositPage() {
 
   // Poll for transaction status updates (public RLS policy allows reading by deposit_intent_id)
   useEffect(() => {
-    if (!intentId || !transaction?.id || step === 'complete' || step === 'expired' || step === 'error') return;
+    if (!intentId || step === 'complete' || step === 'expired' || step === 'error' || step === 'loading' || step === 'select') return;
 
     const interval = setInterval(async () => {
       try {

@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.manage-merchant]
 verify_jwt = false
+
+[functions.manage-agent]
+verify_jwt = false

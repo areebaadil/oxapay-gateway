@@ -115,13 +115,19 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Total Volume (7d)"
             value={`$${(totalVolume / 1000).toFixed(1)}k`}
             icon={DollarSign}
             trend={{ value: 12.5, isPositive: true }}
             subtitle="vs last week"
+          />
+          <StatCard
+            title="Net Revenue"
+            value={`$${((totalVolume - totalVolume * 0.02) / 1000).toFixed(1)}k`}
+            icon={Wallet}
+            subtitle="Total volume - 2%"
           />
           <StatCard
             title="Total Transactions"

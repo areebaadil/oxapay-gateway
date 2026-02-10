@@ -16,7 +16,11 @@ import {
   Pause,
   Play,
   Loader2,
-  Users
+  Users,
+  Lock,
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -64,6 +68,12 @@ export default function Agents() {
     max_deposit_fee_percentage: '5',
     max_withdrawal_fee_percentage: '5',
   });
+  const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; agentId: string; agentName: string } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; agentId: string; agentName: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: agents, isLoading } = useAgents();
   const updateAgent = useUpdateAgent();
@@ -163,6 +173,94 @@ export default function Agents() {
         toast({ title: 'Agent updated', description: 'Details saved successfully.' });
       }
     });
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwordDialog?.agentId || !newPassword) return;
+    
+    setIsPasswordUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-agent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: 'update_password',
+            agent_id: passwordDialog.agentId,
+            new_password: newPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to update password');
+
+      toast({ title: 'Password updated', description: 'Agent password has been changed.' });
+      setPasswordDialog(null);
+      setNewPassword('');
+      setShowNewPassword(false);
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update password',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPasswordUpdating(false);
+    }
+  };
+
+  const handleDeleteAgent = async () => {
+    if (!deleteDialog?.agentId) return;
+    
+    setIsDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Error', description: 'Not authenticated', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-agent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            agent_id: deleteDialog.agentId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete agent');
+
+      toast({ title: 'Agent deleted', description: 'The agent has been removed.' });
+      setDeleteDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete agent',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -359,6 +457,10 @@ export default function Agents() {
                       <Edit className="mr-2 h-4 w-4" />
                       Edit Details
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPasswordDialog({ open: true, agentId: agent.id, agentName: agent.name })}>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Change Password
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleToggleStatus(agent.id, agent.is_enabled)}>
                       {agent.is_enabled ? (
@@ -372,6 +474,14 @@ export default function Agents() {
                           Enable
                         </>
                       )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDeleteDialog({ open: true, agentId: agent.id, agentName: agent.name })}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Agent
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -525,6 +635,72 @@ export default function Agents() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Change Dialog */}
+      <Dialog open={passwordDialog?.open || false} onOpenChange={(open) => !open && setPasswordDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Agent Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for <strong>{passwordDialog?.agentName}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="agent-new-password">New Password</Label>
+              <div className="relative">
+                <Input 
+                  id="agent-new-password" 
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Min 6 characters.</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setPasswordDialog(null); setNewPassword(''); setShowNewPassword(false); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdatePassword} disabled={isPasswordUpdating || newPassword.length < 6}>
+                {isPasswordUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Password'}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Agent</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteDialog?.agentName}</strong>? This will also remove their merchant associations and auth account. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAgent} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Agent'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

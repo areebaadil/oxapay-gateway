@@ -11,22 +11,31 @@ type OxaPayStatus = "Waiting" | "Confirming" | "Paid" | "Failed" | "Expired";
 
 interface OxaPayWebhookPayload {
   status: OxaPayStatus;
-  trackId: string;
-  address?: string;
+  // camelCase (payment type)
+  trackId?: string;
   senderAddress?: string;
   txID?: string;
+  payAmount?: string;
+  orderId?: string;
+  // snake_case (white_label type)
+  track_id?: string;
+  sender_address?: string;
+  order_id?: string;
+  pay_amount?: string;
+  // common fields
+  address?: string;
   amount: string;
   currency: string;
   price?: string;
-  payAmount?: string;
   payCurrency?: string;
   network?: string;
-  feePaidByPayer: number;
-  underPaidCover: number;
+  feePaidByPayer?: number;
+  fee_paid_by_payer?: number;
+  underPaidCover?: number;
+  under_paid_coverage?: number;
   email?: string;
-  orderId: string;
   description?: string;
-  date: string;
+  date: string | number;
   payDate?: string;
   type: "payment" | "payout" | "white_label";
   txs?: Array<{
@@ -155,23 +164,18 @@ serve(async (req) => {
       return new Response("ok", { status: 200 });
     }
 
-    const { 
-      status: oxaStatus, 
-      trackId, 
-      orderId, 
-      txID: directTxID, 
-      payAmount: directPayAmount, 
-      payCurrency,
-      price,
-      senderAddress: directSenderAddress,
-      txs,
-    } = payload;
+    const oxaStatus = payload.status;
+    const payCurrency = payload.payCurrency;
+    const price = payload.price;
+    const txs = payload.txs;
 
-    // For white_label type, extract tx data from txs array
+    // Handle both camelCase (payment) and snake_case (white_label) field names
+    const trackId = payload.trackId || payload.track_id;
+    const orderId = payload.orderId || payload.order_id;
     const firstTx = txs?.[0];
-    const txID = directTxID || firstTx?.tx_hash;
-    const payAmount = directPayAmount || (firstTx ? String(firstTx.received_amount) : undefined);
-    const senderAddress = directSenderAddress || firstTx?.sender_address;
+    const txID = payload.txID || firstTx?.tx_hash;
+    const payAmount = payload.payAmount || payload.pay_amount || (firstTx ? String(firstTx.received_amount) : undefined);
+    const senderAddress = payload.senderAddress || payload.sender_address || firstTx?.sender_address;
 
     console.log(`Processing payment webhook: trackId=${trackId}, status=${oxaStatus}, orderId=${orderId}`);
 

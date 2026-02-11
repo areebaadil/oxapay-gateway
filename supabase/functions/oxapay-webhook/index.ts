@@ -28,7 +28,21 @@ interface OxaPayWebhookPayload {
   description?: string;
   date: string;
   payDate?: string;
-  type: "payment" | "payout";
+  type: "payment" | "payout" | "white_label";
+  txs?: Array<{
+    status: string;
+    tx_hash: string;
+    sent_amount: number;
+    received_amount: number;
+    value: number;
+    currency: string;
+    network: string;
+    sender_address: string;
+    address: string;
+    rate: number;
+    confirmations: number;
+    date: number;
+  }>;
 }
 
 // Validate HMAC signature from OxaPay using Web Crypto API
@@ -53,10 +67,11 @@ async function validateHmacSignature(payload: string, receivedHmac: string, secr
 }
 
 // Map OxaPay status to our transaction status
-function mapStatus(oxaStatus: OxaPayStatus): "PENDING" | "CONFIRMED" | "FAILED" | "EXPIRED" {
+function mapStatus(oxaStatus: OxaPayStatus | string): "PENDING" | "CONFIRMED" | "FAILED" | "EXPIRED" {
   switch (oxaStatus) {
     case "Waiting":
     case "Confirming":
+    case "Paying":
       return "PENDING";
     case "Paid":
       return "CONFIRMED";
@@ -134,8 +149,8 @@ serve(async (req) => {
     // Parse webhook payload
     const payload: OxaPayWebhookPayload = JSON.parse(rawBody);
 
-    // Only process payment webhooks
-    if (payload.type !== "payment") {
+    // Only process payment/white_label webhooks
+    if (payload.type !== "payment" && payload.type !== "white_label") {
       console.log("Ignoring non-payment webhook:", payload.type);
       return new Response("ok", { status: 200 });
     }
@@ -144,12 +159,19 @@ serve(async (req) => {
       status: oxaStatus, 
       trackId, 
       orderId, 
-      txID, 
-      payAmount, 
+      txID: directTxID, 
+      payAmount: directPayAmount, 
       payCurrency,
       price,
-      senderAddress,
+      senderAddress: directSenderAddress,
+      txs,
     } = payload;
+
+    // For white_label type, extract tx data from txs array
+    const firstTx = txs?.[0];
+    const txID = directTxID || firstTx?.tx_hash;
+    const payAmount = directPayAmount || (firstTx ? String(firstTx.received_amount) : undefined);
+    const senderAddress = directSenderAddress || firstTx?.sender_address;
 
     console.log(`Processing payment webhook: trackId=${trackId}, status=${oxaStatus}, orderId=${orderId}`);
 

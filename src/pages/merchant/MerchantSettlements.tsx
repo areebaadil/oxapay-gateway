@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useQuery } from '@tanstack/react-query';
 import { useSettlements, useCreateSettlement } from '@/hooks/useSettlements';
 import { useLedgerBalance } from '@/hooks/useLedger';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +46,24 @@ export default function MerchantSettlements() {
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
 
+  // Fetch merchant's withdrawal fee
+  const { data: merchant } = useQuery({
+    queryKey: ['merchant-detail', merchantId],
+    queryFn: async () => {
+      if (!merchantId) return null;
+      const { data, error } = await supabase
+        .from('merchants')
+        .select('withdrawal_fee_percentage')
+        .eq('id', merchantId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!merchantId,
+  });
+
+  const withdrawalFeePercent = merchant?.withdrawal_fee_percentage || 1.5;
+
   const ratesMap = exchangeRates?.ratesMap || {};
 
   // Only show USDT balance
@@ -53,13 +73,16 @@ export default function MerchantSettlements() {
     ? Number(amount) * (ratesMap[SUPPORTED_COIN] || 1)
     : 0;
 
+  const feeAmount = amount ? Number(amount) * (withdrawalFeePercent / 100) : 0;
+  const netAmount = amount ? Number(amount) - feeAmount : 0;
+
   const handleSubmit = () => {
     if (!amount || !walletAddress) return;
     
     createSettlement.mutate({
       coin: SUPPORTED_COIN,
-      amount: Number(amount),
-      usd_value_at_request: usdValue,
+      amount: netAmount,
+      usd_value_at_request: netAmount * (ratesMap[SUPPORTED_COIN] || 1),
       wallet_address: walletAddress,
     }, {
       onSuccess: () => {
@@ -162,10 +185,24 @@ export default function MerchantSettlements() {
                       Use Max
                     </Button>
                   </div>
-                  {usdValue > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      ≈ ${usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                    </p>
+                  {Number(amount) > 0 && (
+                    <div className="space-y-1 p-3 rounded-lg bg-muted/30 border border-border/50 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Requested Amount</span>
+                        <span>{Number(amount).toFixed(6)} USDT</span>
+                      </div>
+                      <div className="flex justify-between text-destructive">
+                        <span>Withdrawal Fee ({withdrawalFeePercent}%)</span>
+                        <span>-{feeAmount.toFixed(6)} USDT</span>
+                      </div>
+                      <div className="flex justify-between font-semibold border-t pt-1 mt-1">
+                        <span>You'll Receive</span>
+                        <span>{netAmount.toFixed(6)} USDT</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        ≈ ${(netAmount * (ratesMap[SUPPORTED_COIN] || 1)).toFixed(2)} USD
+                      </p>
+                    </div>
                   )}
                 </div>
 

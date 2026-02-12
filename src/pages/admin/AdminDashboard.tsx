@@ -7,6 +7,7 @@ import { TransactionsTable } from '@/components/tables/TransactionsTable';
 import { useMerchants } from '@/hooks/useMerchants';
 import { useTransactions, useTransactionStats, useDailyTransactionStats } from '@/hooks/useTransactions';
 import { useSettlements } from '@/hooks/useSettlements';
+import { useLedgerEntries } from '@/hooks/useLedger';
 import { 
   DollarSign, 
   ArrowDownToLine, 
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useTransactionStats();
   const { data: dailyStats, isLoading: dailyLoading } = useDailyTransactionStats();
   const { data: settlements } = useSettlements('PENDING');
+  const { data: ledgerEntries } = useLedgerEntries();
 
   const recentTransactions = transactions?.slice(0, 5) || [];
   const merchantNames = Object.fromEntries(
@@ -75,7 +77,10 @@ export default function AdminDashboard() {
   const isLoading = merchantsLoading || txLoading || statsLoading;
   const activeMerchants = (merchants || []).filter(m => m.is_enabled).length;
   const totalVolume = stats?.totalVolume || 0;
-  const platformFees = totalVolume * 0.015;
+  // Calculate actual platform fees collected from ledger
+  const totalFeesCollected = (ledgerEntries || [])
+    .filter(e => e.category === 'FEE' && e.entry_type === 'DEBIT')
+    .reduce((sum, e) => sum + Number(e.usd_value_at_time), 0);
 
   if (isLoading) {
     return (
@@ -125,9 +130,9 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Net Revenue"
-            value={`$${((totalVolume - totalVolume * 0.02) / 1000).toFixed(1)}k`}
+            value={`$${(totalVolume - totalFeesCollected).toFixed(2)}`}
             icon={Wallet}
-            subtitle="Total volume - 2%"
+            subtitle={`Fees collected: $${totalFeesCollected.toFixed(2)}`}
           />
           <StatCard
             title="Total Transactions"
@@ -144,9 +149,8 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Platform Revenue"
-            value={`$${platformFees.toFixed(0)}`}
+            value={`$${totalFeesCollected.toFixed(2)}`}
             icon={TrendingUp}
-            trend={{ value: 15.3, isPositive: true }}
             subtitle="from fees"
           />
         </div>

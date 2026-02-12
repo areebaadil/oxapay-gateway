@@ -7,6 +7,7 @@ import { TransactionsTable } from '@/components/tables/TransactionsTable';
 import { useTransactions, useTransactionStats, useDailyTransactionStats } from '@/hooks/useTransactions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiKeys } from '@/hooks/useApiKeys';
+import { useLedgerBalance } from '@/hooks/useLedger';
 import { 
   DollarSign, 
   ArrowDownToLine, 
@@ -33,6 +34,7 @@ export default function MerchantDashboard() {
   const { data: stats, isLoading: statsLoading } = useTransactionStats(merchantId || undefined);
   const { data: dailyStats, isLoading: dailyLoading } = useDailyTransactionStats(merchantId || undefined);
   const { data: apiKeys } = useApiKeys();
+  const balances = useLedgerBalance(merchantId || undefined);
   
   const recentTransactions = (transactions || []).slice(0, 5);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -120,8 +122,7 @@ export default function MerchantDashboard() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Merchant Dashboard</h2>
               <p className="text-muted-foreground">
-                You've received <span className="text-primary font-semibold">${(stats?.totalVolume || 0).toLocaleString()}</span> in 
-                deposits this week
+              Your net balance is <span className="text-primary font-semibold">${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}</span> after fees
               </p>
             </div>
             
@@ -147,11 +148,10 @@ export default function MerchantDashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total Received"
-            value={`$${((stats?.totalVolume || 0) / 1000).toFixed(1)}k`}
+            title="Net Received"
+            value={`$${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}`}
             icon={DollarSign}
-            trend={{ value: 12.5, isPositive: true }}
-            subtitle="this week"
+            subtitle="after platform fees"
           />
           <StatCard
             title="Confirmed Deposits"
@@ -168,7 +168,7 @@ export default function MerchantDashboard() {
           />
           <StatCard
             title="Available Balance"
-            value={`$${((stats?.totalVolume || 0) * 0.985).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+            value={`$${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}`}
             icon={Wallet}
             subtitle="ready for settlement"
           />

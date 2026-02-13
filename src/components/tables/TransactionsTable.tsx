@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Transaction } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CoinBadge } from '@/components/ui/CoinBadge';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ExternalLink, Copy, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,7 +168,7 @@ export function TransactionsTable({
                 </td>
                 <td>
                   <span className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(tx.createdAt, { addSuffix: true })}
+                    {format(tx.createdAt, 'yyyy-MM-dd HH:mm:ss')}
                   </span>
                 </td>
                 <td>

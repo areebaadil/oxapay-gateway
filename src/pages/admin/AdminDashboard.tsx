@@ -77,10 +77,15 @@ export default function AdminDashboard() {
   const isLoading = merchantsLoading || txLoading || statsLoading;
   const activeMerchants = (merchants || []).filter(m => m.is_enabled).length;
   const totalVolume = stats?.totalVolume || 0;
-  // Calculate actual platform fees collected from ledger
+  const oxapayFeeRate = 0.02;
+  const netVolume = totalVolume * (1 - oxapayFeeRate);
+  // Total merchant fees collected from ledger
   const totalFeesCollected = (ledgerEntries || [])
     .filter(e => e.category === 'FEE' && e.entry_type === 'DEBIT')
     .reduce((sum, e) => sum + Number(e.usd_value_at_time), 0);
+  // Platform revenue = merchant fees minus OxaPay's 2% cut on total volume
+  const oxapayFees = totalVolume * oxapayFeeRate;
+  const platformRevenue = Math.max(0, totalFeesCollected - oxapayFees);
 
   if (isLoading) {
     return (
@@ -113,8 +118,8 @@ export default function AdminDashboard() {
           <div className="relative">
             <h2 className="text-2xl font-bold mb-2">Welcome back, Admin</h2>
             <p className="text-muted-foreground max-w-lg">
-              Your gateway processed <span className="text-primary font-semibold">${totalVolume.toLocaleString()}</span> in 
-              the last 7 days across <span className="text-primary font-semibold">{stats?.confirmedTransactions || 0}</span> confirmed transactions.
+              Your gateway processed <span className="text-primary font-semibold">${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> all-time 
+              across <span className="text-primary font-semibold">{stats?.confirmedTransactions || 0}</span> confirmed transactions.
             </p>
           </div>
         </div>
@@ -122,24 +127,22 @@ export default function AdminDashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
-            title="Total Volume (7d)"
-            value={`$${(totalVolume / 1000).toFixed(1)}k`}
+            title="Total Volume"
+            value={`$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            trend={{ value: 12.5, isPositive: true }}
-            subtitle="vs last week"
+            subtitle="all-time confirmed"
           />
           <StatCard
-            title="Net Revenue"
-            value={`$${(totalVolume - totalFeesCollected).toFixed(2)}`}
+            title="Net Volume"
+            value={`$${netVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={Wallet}
-            subtitle={`Fees collected: $${totalFeesCollected.toFixed(2)}`}
+            subtitle="after 2% OxaPay fee"
           />
           <StatCard
             title="Total Transactions"
             value={(stats?.totalTransactions || 0).toString()}
             icon={ArrowDownToLine}
-            trend={{ value: 8.2, isPositive: true }}
-            subtitle="vs last week"
+            subtitle={`${stats?.confirmedTransactions || 0} confirmed`}
           />
           <StatCard
             title="Active Merchants"
@@ -149,9 +152,9 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Platform Revenue"
-            value={`$${totalFeesCollected.toFixed(2)}`}
+            value={`$${platformRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={TrendingUp}
-            subtitle="from fees"
+            subtitle={`Fees: $${totalFeesCollected.toFixed(2)} − OxaPay: $${oxapayFees.toFixed(2)}`}
           />
         </div>
 

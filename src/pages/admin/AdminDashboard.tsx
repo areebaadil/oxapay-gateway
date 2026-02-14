@@ -78,15 +78,15 @@ export default function AdminDashboard() {
 
   const isLoading = merchantsLoading || txLoading || statsLoading;
   const activeMerchants = (merchants || []).filter(m => m.is_enabled).length;
-  const totalVolume = stats?.totalVolume || 0;
+  const totalDeposits = stats?.totalDepositVolume || 0;
   const oxapayFeeRate = 0.02;
-  const netVolume = totalVolume * (1 - oxapayFeeRate);
+  const netDeposits = totalDeposits * (1 - oxapayFeeRate);
   // Total merchant fees collected from ledger
   const totalFeesCollected = (ledgerEntries || [])
     .filter(e => e.category === 'FEE' && e.entry_type === 'DEBIT')
     .reduce((sum, e) => sum + Number(e.usd_value_at_time), 0);
-  // Platform revenue = merchant fees minus OxaPay's 2% cut on total volume
-  const oxapayFees = totalVolume * oxapayFeeRate;
+  // Platform revenue = merchant fees minus OxaPay's 2% cut on deposit volume
+  const oxapayFees = totalDeposits * oxapayFeeRate;
   const platformRevenue = Math.max(0, totalFeesCollected - oxapayFees);
   // Total withdrawals from completed settlements
   const totalWithdrawals = (allSettlements || [])
@@ -124,23 +124,23 @@ export default function AdminDashboard() {
           <div className="relative">
             <h2 className="text-2xl font-bold mb-2">Welcome back, Admin</h2>
             <p className="text-muted-foreground max-w-lg">
-              Your gateway processed <span className="text-primary font-semibold">${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> all-time 
+              Your gateway processed <span className="text-primary font-semibold">${totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> in deposits 
               across <span className="text-primary font-semibold">{stats?.confirmedTransactions || 0}</span> confirmed transactions.
             </p>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
-            title="Total Volume"
-            value={`$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            title="Total Deposits"
+            value={`$${totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
             subtitle="all-time confirmed"
           />
           <StatCard
-            title="Net Volume"
-            value={`$${netVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            title="Net Deposits"
+            value={`$${netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={Wallet}
             subtitle="after 2% OxaPay fee"
           />
@@ -162,12 +162,14 @@ export default function AdminDashboard() {
             icon={ArrowUpRight}
             subtitle="all-time completed"
           />
+          {/* Platform Revenue hidden for now
           <StatCard
             title="Platform Revenue"
             value={`$${platformRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={TrendingUp}
             subtitle={`Fees: $${totalFeesCollected.toFixed(2)} − OxaPay: $${oxapayFees.toFixed(2)}`}
           />
+          */}
         </div>
 
         {/* Charts Row */}

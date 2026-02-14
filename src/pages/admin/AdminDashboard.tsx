@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Wallet,
   Clock,
-  Loader2
+  Loader2,
+  ArrowUpRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +28,8 @@ export default function AdminDashboard() {
   const { data: transactions, isLoading: txLoading } = useTransactions();
   const { data: stats, isLoading: statsLoading } = useTransactionStats();
   const { data: dailyStats, isLoading: dailyLoading } = useDailyTransactionStats();
-  const { data: settlements } = useSettlements('PENDING');
+  const { data: pendingSettlements } = useSettlements('PENDING');
+  const { data: allSettlements } = useSettlements();
   const { data: ledgerEntries } = useLedgerEntries();
 
   const recentTransactions = transactions?.slice(0, 5) || [];
@@ -86,6 +88,10 @@ export default function AdminDashboard() {
   // Platform revenue = merchant fees minus OxaPay's 2% cut on total volume
   const oxapayFees = totalVolume * oxapayFeeRate;
   const platformRevenue = Math.max(0, totalFeesCollected - oxapayFees);
+  // Total withdrawals from completed settlements
+  const totalWithdrawals = (allSettlements || [])
+    .filter((s: any) => s.status === 'COMPLETED')
+    .reduce((sum: number, s: any) => sum + Number(s.usd_value_at_request), 0);
 
   if (isLoading) {
     return (
@@ -125,7 +131,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <StatCard
             title="Total Volume"
             value={`$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -149,6 +155,12 @@ export default function AdminDashboard() {
             value={activeMerchants.toString()}
             icon={Users}
             subtitle={`${merchants?.length || 0} total`}
+          />
+          <StatCard
+            title="Total Withdrawals"
+            value={`$${totalWithdrawals.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            icon={ArrowUpRight}
+            subtitle="all-time completed"
           />
           <StatCard
             title="Platform Revenue"
@@ -202,7 +214,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="font-semibold">Pending Settlements</p>
-                <p className="text-2xl font-bold text-status-pending">{settlements?.length || 0}</p>
+                <p className="text-2xl font-bold text-status-pending">{pendingSettlements?.length || 0}</p>
               </div>
             </CardContent>
           </Card>

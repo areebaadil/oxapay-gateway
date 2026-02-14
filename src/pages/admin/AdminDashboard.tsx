@@ -90,7 +90,6 @@ export default function AdminDashboard() {
   const platformRevenue = Math.max(0, totalFeesCollected - oxapayFees);
   // Total withdrawals from completed settlements
   const totalWithdrawals = (allSettlements || [])
-    .filter((s: any) => s.status === 'COMPLETED')
     .reduce((sum: number, s: any) => sum + Number(s.usd_value_at_request), 0);
 
   if (isLoading) {

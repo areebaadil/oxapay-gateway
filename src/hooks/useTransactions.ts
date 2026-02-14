@@ -157,19 +157,34 @@ export function useUpdateTransactionStatus() {
       status: TransactionStatus;
       txHash?: string;
     }) => {
-      const updateData: { 
-        status: TransactionStatus; 
-        confirmed_at?: string;
-        tx_hash?: string;
-      } = { status };
-      
+      // Use edge function for approval to also create ledger entries
       if (status === 'CONFIRMED') {
-        updateData.confirmed_at = new Date().toISOString();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/approve-transaction`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ transactionId, status, txHash }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to approve transaction');
+        }
+
+        return response.json();
       }
-      
-      if (txHash) {
-        updateData.tx_hash = txHash;
-      }
+
+      // For non-CONFIRMED status (e.g. FAILED), direct update is fine
+      const updateData: { status: TransactionStatus; tx_hash?: string } = { status };
+      if (txHash) updateData.tx_hash = txHash;
 
       const { data, error } = await supabase
         .from('transactions')
@@ -185,6 +200,7 @@ export function useUpdateTransactionStatus() {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['transaction-stats'] });
       queryClient.invalidateQueries({ queryKey: ['daily-transaction-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });
       
       const statusText = variables.status === 'CONFIRMED' ? 'approved' : 
                          variables.status === 'FAILED' ? 'rejected' : 

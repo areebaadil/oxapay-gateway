@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.manage-agent]
 verify_jwt = false
+
+[functions.approve-transaction]
+verify_jwt = false

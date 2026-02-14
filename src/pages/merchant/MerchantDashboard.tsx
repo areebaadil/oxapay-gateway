@@ -82,6 +82,9 @@ export default function MerchantDashboard() {
   }));
 
   const isLoading = txLoading || statsLoading;
+  const totalDeposits = stats?.totalVolume || 0;
+  // Net balance from ledger (deposits minus fees)
+  const netBalance = balances?.reduce((sum, b) => sum + b.balance, 0) || 0;
 
   const copyApiKeyPrefix = () => {
     if (activeApiKey) {
@@ -122,7 +125,7 @@ export default function MerchantDashboard() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Merchant Dashboard</h2>
               <p className="text-muted-foreground">
-              Your net balance is <span className="text-primary font-semibold">${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}</span> after fees
+              Your net balance is <span className="text-primary font-semibold">${netBalance.toFixed(2)}</span> after fees
               </p>
             </div>
             
@@ -148,17 +151,16 @@ export default function MerchantDashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Net Received"
-            value={`$${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}`}
+            title="Total Deposits"
+            value={`$${totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={DollarSign}
-            subtitle="after platform fees"
+            subtitle="gross confirmed deposits"
           />
           <StatCard
-            title="Confirmed Deposits"
-            value={(stats?.confirmedTransactions || 0).toString()}
+            title="Net Received"
+            value={`$${netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={ArrowDownToLine}
-            trend={{ value: 8.2, isPositive: true }}
-            subtitle="this week"
+            subtitle="after platform fees"
           />
           <StatCard
             title="Pending"
@@ -168,7 +170,7 @@ export default function MerchantDashboard() {
           />
           <StatCard
             title="Available Balance"
-            value={`$${(balances?.reduce((sum, b) => sum + b.balance, 0) || 0).toFixed(2)}`}
+            value={`$${netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             icon={Wallet}
             subtitle="ready for settlement"
           />

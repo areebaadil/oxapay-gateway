@@ -55,14 +55,14 @@ export default function AgentDashboard() {
             title="Earned Revenue"
             value={`$${totalEarnedRevenue.toFixed(2)}`}
             icon={PiggyBank}
-            subtitle="From confirmed deposits"
+            subtitle={`Margin: merchant fee − your ${agentDepositFee}% platform fee`}
             iconClassName="bg-green-500/10"
           />
           <StatCard
-            title="Total Volume"
-            value={`$${confirmedVolume.toLocaleString()}`}
+            title="Merchants' Net Volume"
+            value={`$${confirmedVolume.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
             icon={DollarSign}
-            subtitle={`$${totalVolume.toLocaleString()} total processed`}
+            subtitle={`$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2 })} total processed`}
           />
           <StatCard
             title="My Merchants"

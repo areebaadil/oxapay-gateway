@@ -76,6 +76,10 @@ export function useTransactionStats(merchantId?: string) {
       const confirmed = transactions.filter(tx => 
         tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
       );
+      // Deposit volume excludes settled/withdrawal transactions — only confirmed deposits
+      const depositOnly = transactions.filter(tx => 
+        tx.status === 'CONFIRMED'
+      );
 
       return {
         totalTransactions: transactions.length,
@@ -83,6 +87,7 @@ export function useTransactionStats(merchantId?: string) {
         pendingTransactions: transactions.filter(tx => tx.status === 'PENDING').length,
         failedTransactions: transactions.filter(tx => tx.status === 'FAILED').length,
         totalVolume: confirmed.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
+        totalDepositVolume: depositOnly.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
         volumeByCoin: Object.entries(
           confirmed.reduce((acc, tx) => {
             acc[tx.coin] = (acc[tx.coin] || 0) + Number(tx.usd_value);

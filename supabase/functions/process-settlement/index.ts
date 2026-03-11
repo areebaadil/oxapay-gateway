@@ -150,17 +150,29 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // If completing, create ledger entry for the settlement debit
+    // If completing, create ledger entries for the settlement debit + fee
     if (action === "complete") {
+      // Fetch merchant's withdrawal fee percentage
+      const { data: merchantFeeData, error: merchantFeeError } = await supabase
+        .from("merchants")
+        .select("withdrawal_fee_percentage")
+        .eq("id", settlement.merchant_id)
+        .single();
+
+      const withdrawalFeePercent = merchantFeeData?.withdrawal_fee_percentage || 1.5;
+      const grossAmount = settlement.amount;
+      const feeAmount = grossAmount * (withdrawalFeePercent / 100);
+      const netAmount = grossAmount - feeAmount;
+
       // Create a pseudo-transaction for ledger reference
       const { data: pseudoTx, error: txError } = await supabase
         .from("transactions")
         .insert({
           merchant_id: settlement.merchant_id,
           coin: settlement.coin,
-          crypto_amount: settlement.amount,
+          crypto_amount: grossAmount,
           usd_value: settlement.usd_value_at_request,
-          exchange_rate: settlement.usd_value_at_request / settlement.amount,
+          exchange_rate: settlement.usd_value_at_request / grossAmount,
           status: "SETTLED",
           user_reference: `settlement_${settlementId}`,
           tx_hash: txHash,
@@ -172,17 +184,31 @@ serve(async (req) => {
       if (txError) {
         console.error("Error creating settlement transaction:", txError);
       } else {
-        // Create ledger entry for settlement debit
+        // Create ledger entry for settlement debit (net amount sent to merchant)
         await supabase.from("ledger_entries").insert({
           transaction_id: pseudoTx.id,
           merchant_id: settlement.merchant_id,
           coin: settlement.coin,
           entry_type: "DEBIT",
           category: "SETTLEMENT",
-          amount: settlement.amount,
-          usd_value_at_time: settlement.usd_value_at_request,
+          amount: netAmount,
+          usd_value_at_time: (settlement.usd_value_at_request / grossAmount) * netAmount,
           description: `Settlement to ${settlement.wallet_address.slice(0, 10)}...`,
         });
+
+        // Create ledger entry for withdrawal fee debit
+        if (feeAmount > 0) {
+          await supabase.from("ledger_entries").insert({
+            transaction_id: pseudoTx.id,
+            merchant_id: settlement.merchant_id,
+            coin: settlement.coin,
+            entry_type: "DEBIT",
+            category: "FEE",
+            amount: feeAmount,
+            usd_value_at_time: (settlement.usd_value_at_request / grossAmount) * feeAmount,
+            description: `Withdrawal fee (${withdrawalFeePercent}%)`,
+          });
+        }
       }
 
       // Create audit log

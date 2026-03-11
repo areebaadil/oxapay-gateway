@@ -81,8 +81,8 @@ export default function MerchantSettlements() {
     
     createSettlement.mutate({
       coin: SUPPORTED_COIN,
-      amount: netAmount,
-      usd_value_at_request: netAmount * (ratesMap[SUPPORTED_COIN] || 1),
+      amount: Number(amount),
+      usd_value_at_request: Number(amount) * (ratesMap[SUPPORTED_COIN] || 1),
       wallet_address: walletAddress,
     }, {
       onSuccess: () => {

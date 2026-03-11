@@ -73,23 +73,20 @@ export function useTransactionStats(merchantId?: string) {
       if (error) throw error;
 
       const transactions = data || [];
-      const confirmed = transactions.filter(tx => 
-        tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
-      );
-      // Deposit volume excludes settled/withdrawal transactions — only confirmed deposits
+      // Only CONFIRMED = actual deposits; SETTLED = withdrawal pseudo-transactions
       const depositOnly = transactions.filter(tx => 
         tx.status === 'CONFIRMED'
       );
 
       return {
         totalTransactions: transactions.length,
-        confirmedTransactions: confirmed.length,
+        confirmedTransactions: depositOnly.length,
         pendingTransactions: transactions.filter(tx => tx.status === 'PENDING').length,
         failedTransactions: transactions.filter(tx => tx.status === 'FAILED').length,
-        totalVolume: confirmed.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
+        totalVolume: depositOnly.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
         totalDepositVolume: depositOnly.reduce((sum, tx) => sum + Number(tx.usd_value), 0),
         volumeByCoin: Object.entries(
-          confirmed.reduce((acc, tx) => {
+          depositOnly.reduce((acc, tx) => {
             acc[tx.coin] = (acc[tx.coin] || 0) + Number(tx.usd_value);
             return acc;
           }, {} as Record<string, number>)
@@ -122,8 +119,9 @@ export function useDailyTransactionStats(merchantId?: string) {
       if (error) throw error;
 
       const transactions = data || [];
+      // Only CONFIRMED = actual deposits; exclude SETTLED (withdrawal pseudo-transactions)
       const confirmed = transactions.filter(tx => 
-        tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
+        tx.status === 'CONFIRMED'
       );
       const pending = transactions.filter(tx => tx.status === 'PENDING');
       const failed = transactions.filter(tx => tx.status === 'FAILED' || tx.status === 'EXPIRED');

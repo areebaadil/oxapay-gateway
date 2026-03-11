@@ -119,8 +119,9 @@ export function useDailyTransactionStats(merchantId?: string) {
       if (error) throw error;
 
       const transactions = data || [];
+      // Only CONFIRMED = actual deposits; exclude SETTLED (withdrawal pseudo-transactions)
       const confirmed = transactions.filter(tx => 
-        tx.status === 'CONFIRMED' || tx.status === 'SETTLED'
+        tx.status === 'CONFIRMED'
       );
       const pending = transactions.filter(tx => tx.status === 'PENDING');
       const failed = transactions.filter(tx => tx.status === 'FAILED' || tx.status === 'EXPIRED');

@@ -432,11 +432,13 @@ export default function Merchants() {
                       id="deposit-fee" 
                       type="number" 
                       step="0.1" 
-                      placeholder="1.5"
+                      min="5"
+                      placeholder="5"
                       value={formData.deposit_fee_percentage}
                       onChange={(e) => setFormData({ ...formData, deposit_fee_percentage: e.target.value })}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">Minimum 5%</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="withdrawal-fee">Withdrawal Fee %</Label>

@@ -63,9 +63,9 @@ export default function Agents() {
     name: '',
     email: '',
     password: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
-    max_deposit_fee_percentage: '5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
+    max_deposit_fee_percentage: '10',
     max_withdrawal_fee_percentage: '5',
   });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; agentId: string; agentName: string } | null>(null);

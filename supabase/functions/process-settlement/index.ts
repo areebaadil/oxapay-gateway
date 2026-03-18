@@ -198,19 +198,31 @@ serve(async (req) => {
           description: `Settlement to ${settlement.wallet_address.slice(0, 10)}...`,
         });
 
-        // Create ledger entry for withdrawal fee debit
-        if (feeAmount > 0) {
+        // Create ledger entry for withdrawal percentage fee debit
+        if (percentageFee > 0) {
           await supabase.from("ledger_entries").insert({
             transaction_id: pseudoTx.id,
             merchant_id: settlement.merchant_id,
             coin: settlement.coin,
             entry_type: "DEBIT",
             category: "FEE",
-            amount: feeAmount,
-            usd_value_at_time: (settlement.usd_value_at_request / grossAmount) * feeAmount,
+            amount: percentageFee,
+            usd_value_at_time: (settlement.usd_value_at_request / grossAmount) * percentageFee,
             description: `Withdrawal fee (${withdrawalFeePercent}%)`,
           });
         }
+
+        // Create ledger entry for fixed $1 service fee
+        await supabase.from("ledger_entries").insert({
+          transaction_id: pseudoTx.id,
+          merchant_id: settlement.merchant_id,
+          coin: settlement.coin,
+          entry_type: "DEBIT",
+          category: "FEE",
+          amount: serviceFee,
+          usd_value_at_time: serviceFee,
+          description: `Withdrawal service fee ($1)`,
+        });
       }
 
       // Create audit log

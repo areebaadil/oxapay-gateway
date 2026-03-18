@@ -82,8 +82,8 @@ serve(async (req) => {
     }
 
     // Validate fees against agent limits
-    const depositFee = deposit_fee_percentage || 1.5;
-    const withdrawalFee = withdrawal_fee_percentage || 1.5;
+    const depositFee = deposit_fee_percentage != null ? Math.max(deposit_fee_percentage, 5) : 5;
+    const withdrawalFee = withdrawal_fee_percentage != null ? withdrawal_fee_percentage : 0;
 
     if (depositFee > agent.max_deposit_fee_percentage) {
       return new Response(

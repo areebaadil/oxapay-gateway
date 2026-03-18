@@ -809,6 +809,7 @@ export default function Merchants() {
                     id="edit-withdrawal-fee" 
                     type="number" 
                     step="0.1" 
+                    min="0"
                     value={editFormData.withdrawal_fee_percentage}
                     onChange={(e) => setEditFormData({ ...editFormData, withdrawal_fee_percentage: e.target.value })}
                     required

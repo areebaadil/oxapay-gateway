@@ -62,7 +62,7 @@ export default function MerchantSettlements() {
     enabled: !!merchantId,
   });
 
-  const withdrawalFeePercent = merchant?.withdrawal_fee_percentage || 1.5;
+  const withdrawalFeePercent = merchant?.withdrawal_fee_percentage ?? 0;
 
   const ratesMap = exchangeRates?.ratesMap || {};
 

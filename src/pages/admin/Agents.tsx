@@ -358,7 +358,8 @@ export default function Agents() {
                         id="withdrawal-fee" 
                         type="number" 
                         step="0.1" 
-                        placeholder="1.5"
+                        min="0"
+                        placeholder="0"
                         value={formData.withdrawal_fee_percentage}
                         onChange={(e) => setFormData({ ...formData, withdrawal_fee_percentage: e.target.value })}
                         required

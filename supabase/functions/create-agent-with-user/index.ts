@@ -89,8 +89,8 @@ serve(async (req) => {
         user_id: newUser.user.id,
         name,
         email,
-        deposit_fee_percentage: deposit_fee_percentage || 1.5,
-        withdrawal_fee_percentage: withdrawal_fee_percentage || 1.5,
+        deposit_fee_percentage: deposit_fee_percentage != null ? Math.max(deposit_fee_percentage, 5) : 5,
+        withdrawal_fee_percentage: withdrawal_fee_percentage != null ? withdrawal_fee_percentage : 0,
         max_deposit_fee_percentage: max_deposit_fee_percentage || 5.0,
         max_withdrawal_fee_percentage: max_withdrawal_fee_percentage || 5.0,
       })

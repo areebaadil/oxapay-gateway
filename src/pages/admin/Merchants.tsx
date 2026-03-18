@@ -199,8 +199,8 @@ export default function Merchants() {
       name: editFormData.name,
       email: editFormData.email,
       webhook_url: editFormData.webhook_url || null,
-      deposit_fee_percentage: parseFloat(editFormData.deposit_fee_percentage),
-      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage),
+      deposit_fee_percentage: Math.max(parseFloat(editFormData.deposit_fee_percentage), 5),
+      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage) || 0,
     }, {
       onSuccess: () => {
         setEditDialog(null);

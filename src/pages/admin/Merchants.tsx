@@ -138,8 +138,8 @@ export default function Merchants() {
             email: formData.email,
             password: formData.password,
             webhook_url: formData.webhook_url || null,
-            deposit_fee_percentage: parseFloat(formData.deposit_fee_percentage),
-            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage),
+            deposit_fee_percentage: Math.max(parseFloat(formData.deposit_fee_percentage), 5),
+            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage) || 0,
             referral_agent_email: formData.referral_agent_email || null,
           }),
         }

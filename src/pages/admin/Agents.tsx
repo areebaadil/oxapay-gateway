@@ -54,9 +54,9 @@ export default function Agents() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
-    max_deposit_fee_percentage: '5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
+    max_deposit_fee_percentage: '10',
     max_withdrawal_fee_percentage: '5',
   });
   const [formData, setFormData] = useState({

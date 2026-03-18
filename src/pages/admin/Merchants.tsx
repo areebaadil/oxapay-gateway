@@ -66,8 +66,8 @@ export default function Merchants() {
     name: '',
     email: '',
     webhook_url: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
   });
   const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);

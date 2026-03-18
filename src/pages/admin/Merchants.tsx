@@ -161,7 +161,7 @@ export default function Merchants() {
       });
       
       setIsCreateOpen(false);
-      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5', referral_agent_email: '' });
+      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '5', withdrawal_fee_percentage: '0', referral_agent_email: '' });
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
       queryClient.invalidateQueries({ queryKey: ['merchants-with-agents'] });
     } catch (error: unknown) {

@@ -345,7 +345,8 @@ export default function Agents() {
                         id="deposit-fee" 
                         type="number" 
                         step="0.1" 
-                        placeholder="1.5"
+                        min="5"
+                        placeholder="5"
                         value={formData.deposit_fee_percentage}
                         onChange={(e) => setFormData({ ...formData, deposit_fee_percentage: e.target.value })}
                         required

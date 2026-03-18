@@ -159,10 +159,12 @@ serve(async (req) => {
         .eq("id", settlement.merchant_id)
         .single();
 
-      const withdrawalFeePercent = merchantFeeData?.withdrawal_fee_percentage || 1.5;
+      const withdrawalFeePercent = merchantFeeData?.withdrawal_fee_percentage ?? 0;
       const grossAmount = settlement.amount;
-      const feeAmount = grossAmount * (withdrawalFeePercent / 100);
-      const netAmount = grossAmount - feeAmount;
+      const percentageFee = grossAmount * (withdrawalFeePercent / 100);
+      const serviceFee = 1; // Fixed $1 service fee
+      const totalFees = percentageFee + serviceFee;
+      const netAmount = grossAmount - totalFees;
 
       // Create a pseudo-transaction for ledger reference
       const { data: pseudoTx, error: txError } = await supabase

@@ -193,9 +193,15 @@ export default function MerchantSettlements() {
                         <span className="text-muted-foreground">Requested Amount</span>
                         <span>{Number(amount).toFixed(6)} USDT</span>
                       </div>
+                      {withdrawalFeePercent > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <span>Withdrawal Fee ({withdrawalFeePercent}%)</span>
+                          <span>-{feeAmount.toFixed(6)} USDT</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-destructive">
-                        <span>Withdrawal Fee ({withdrawalFeePercent}%)</span>
-                        <span>-{feeAmount.toFixed(6)} USDT</span>
+                        <span>Service Fee</span>
+                        <span>-${serviceFee.toFixed(2)} (≈ {serviceFee.toFixed(6)} USDT)</span>
                       </div>
                       <div className="flex justify-between font-semibold border-t pt-1 mt-1">
                         <span>You'll Receive</span>

@@ -77,8 +77,8 @@ export default function Merchants() {
     email: '',
     password: '',
     webhook_url: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
     referral_agent_email: '',
   });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);

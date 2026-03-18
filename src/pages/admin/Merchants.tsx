@@ -66,8 +66,8 @@ export default function Merchants() {
     name: '',
     email: '',
     webhook_url: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
   });
   const [apiKeyDialog, setApiKeyDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
@@ -77,8 +77,8 @@ export default function Merchants() {
     email: '',
     password: '',
     webhook_url: '',
-    deposit_fee_percentage: '1.5',
-    withdrawal_fee_percentage: '1.5',
+    deposit_fee_percentage: '5',
+    withdrawal_fee_percentage: '0',
     referral_agent_email: '',
   });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; merchantId: string; merchantName: string } | null>(null);
@@ -138,8 +138,8 @@ export default function Merchants() {
             email: formData.email,
             password: formData.password,
             webhook_url: formData.webhook_url || null,
-            deposit_fee_percentage: parseFloat(formData.deposit_fee_percentage),
-            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage),
+            deposit_fee_percentage: Math.max(parseFloat(formData.deposit_fee_percentage), 5),
+            withdrawal_fee_percentage: parseFloat(formData.withdrawal_fee_percentage) || 0,
             referral_agent_email: formData.referral_agent_email || null,
           }),
         }
@@ -161,7 +161,7 @@ export default function Merchants() {
       });
       
       setIsCreateOpen(false);
-      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '1.5', withdrawal_fee_percentage: '1.5', referral_agent_email: '' });
+      setFormData({ name: '', email: '', password: '', webhook_url: '', deposit_fee_percentage: '5', withdrawal_fee_percentage: '0', referral_agent_email: '' });
       queryClient.invalidateQueries({ queryKey: ['merchants'] });
       queryClient.invalidateQueries({ queryKey: ['merchants-with-agents'] });
     } catch (error: unknown) {
@@ -199,8 +199,8 @@ export default function Merchants() {
       name: editFormData.name,
       email: editFormData.email,
       webhook_url: editFormData.webhook_url || null,
-      deposit_fee_percentage: parseFloat(editFormData.deposit_fee_percentage),
-      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage),
+      deposit_fee_percentage: Math.max(parseFloat(editFormData.deposit_fee_percentage), 5),
+      withdrawal_fee_percentage: parseFloat(editFormData.withdrawal_fee_percentage) || 0,
     }, {
       onSuccess: () => {
         setEditDialog(null);
@@ -432,11 +432,13 @@ export default function Merchants() {
                       id="deposit-fee" 
                       type="number" 
                       step="0.1" 
-                      placeholder="1.5"
+                      min="5"
+                      placeholder="5"
                       value={formData.deposit_fee_percentage}
                       onChange={(e) => setFormData({ ...formData, deposit_fee_percentage: e.target.value })}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">Minimum 5%</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="withdrawal-fee">Withdrawal Fee %</Label>
@@ -444,7 +446,8 @@ export default function Merchants() {
                       id="withdrawal-fee" 
                       type="number" 
                       step="0.1" 
-                      placeholder="1.5"
+                      min="0"
+                      placeholder="0"
                       value={formData.withdrawal_fee_percentage}
                       onChange={(e) => setFormData({ ...formData, withdrawal_fee_percentage: e.target.value })}
                       required
@@ -793,10 +796,12 @@ export default function Merchants() {
                     id="edit-deposit-fee" 
                     type="number" 
                     step="0.1" 
+                    min="5"
                     value={editFormData.deposit_fee_percentage}
                     onChange={(e) => setEditFormData({ ...editFormData, deposit_fee_percentage: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">Minimum 5%</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-withdrawal-fee">Withdrawal Fee %</Label>
@@ -804,6 +809,7 @@ export default function Merchants() {
                     id="edit-withdrawal-fee" 
                     type="number" 
                     step="0.1" 
+                    min="0"
                     value={editFormData.withdrawal_fee_percentage}
                     onChange={(e) => setEditFormData({ ...editFormData, withdrawal_fee_percentage: e.target.value })}
                     required

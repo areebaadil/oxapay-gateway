@@ -73,8 +73,10 @@ export default function MerchantSettlements() {
     ? Number(amount) * (ratesMap[SUPPORTED_COIN] || 1)
     : 0;
 
+  const serviceFee = 1; // Fixed $1 service fee
   const feeAmount = amount ? Number(amount) * (withdrawalFeePercent / 100) : 0;
-  const netAmount = amount ? Number(amount) - feeAmount : 0;
+  const totalFees = amount ? feeAmount + serviceFee : 0;
+  const netAmount = amount ? Number(amount) - totalFees : 0;
 
   const handleSubmit = () => {
     if (!amount || !walletAddress) return;

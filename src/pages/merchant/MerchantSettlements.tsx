@@ -86,21 +86,44 @@ export default function MerchantSettlements() {
   const totalFees = amount ? feeAmount + serviceFee : 0;
   const netAmount = amount ? Number(amount) - totalFees : 0;
 
-  const handleSubmit = () => {
-    if (!amount || !walletAddress) return;
+  const handleSubmit = async () => {
+    if (!amount || !walletAddress || !password) return;
     
-    createSettlement.mutate({
-      coin: SUPPORTED_COIN,
-      amount: Number(amount),
-      usd_value_at_request: Number(amount) * (ratesMap[SUPPORTED_COIN] || 1),
-      wallet_address: walletAddress,
-    }, {
-      onSuccess: () => {
-        setIsDialogOpen(false);
-        setAmount('');
-        setWalletAddress('');
+    setIsVerifying(true);
+    try {
+      // Verify password before submitting
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: password,
+      });
+
+      if (signInError) {
+        toast({ title: 'Error', description: 'Incorrect password. Please try again.', variant: 'destructive' });
+        setIsVerifying(false);
+        return;
       }
-    });
+
+      createSettlement.mutate({
+        coin: SUPPORTED_COIN,
+        amount: Number(amount),
+        usd_value_at_request: Number(amount) * (ratesMap[SUPPORTED_COIN] || 1),
+        wallet_address: walletAddress,
+      }, {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+          setAmount('');
+          setWalletAddress('');
+          setPassword('');
+          setIsVerifying(false);
+        },
+        onError: () => {
+          setIsVerifying(false);
+        }
+      });
+    } catch {
+      toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' });
+      setIsVerifying(false);
+    }
   };
 
   const pendingSettlements = settlements?.filter(s => s.status === 'PENDING') || [];

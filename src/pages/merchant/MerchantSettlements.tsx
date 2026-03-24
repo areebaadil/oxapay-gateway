@@ -29,7 +29,10 @@ import {
   CheckCircle, 
   XCircle,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

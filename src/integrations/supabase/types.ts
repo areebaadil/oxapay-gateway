@@ -499,6 +499,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_totp: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          totp_secret: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          totp_secret: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          totp_secret?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           attempts: number

@@ -39,15 +39,19 @@ import { cn } from '@/lib/utils';
 import { CoinType, SUPPORTED_COIN } from '@/types';
 
 export default function MerchantSettlements() {
-  const { merchantId } = useAuth();
+  const { merchantId, user } = useAuth();
   const { data: settlements, isLoading } = useSettlements();
   const { data: exchangeRates } = useExchangeRates();
   const balances = useLedgerBalance(merchantId || undefined);
   const createSettlement = useCreateSettlement();
+  const { toast } = useToast();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Fetch merchant's withdrawal fee
   const { data: merchant } = useQuery({

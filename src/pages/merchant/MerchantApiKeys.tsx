@@ -204,7 +204,7 @@ export default function MerchantApiKeys() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'CryptoGate-API-Documentation.html';
+    link.download = 'Roxpay-API-Documentation.html';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

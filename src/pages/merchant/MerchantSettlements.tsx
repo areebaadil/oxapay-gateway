@@ -257,10 +257,38 @@ export default function MerchantSettlements() {
                     Make sure to use a valid TRC-20 compatible address
                   </p>
                 </div>
+
+                {/* Password Verification */}
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    Verify Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your account password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your password to confirm this withdrawal
+                  </p>
+                </div>
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => { setIsDialogOpen(false); setPassword(''); }}>
                   Cancel
                 </Button>
                 <Button 
@@ -268,15 +296,17 @@ export default function MerchantSettlements() {
                   disabled={
                     !amount || 
                     !walletAddress || 
+                    !password ||
                     Number(amount) <= 0 || 
                     Number(amount) > usdtBalance ||
-                    createSettlement.isPending
+                    createSettlement.isPending ||
+                    isVerifying
                   }
                 >
-                  {createSettlement.isPending ? (
+                  {(createSettlement.isPending || isVerifying) ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
+                      {isVerifying ? 'Verifying...' : 'Submitting...'}
                     </>
                   ) : (
                     'Submit Request'

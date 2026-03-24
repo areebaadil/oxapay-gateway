@@ -102,6 +102,11 @@ const App = () => (
                 <AgentSettlements />
               </ProtectedRoute>
             } />
+            <Route path="/agent/settings" element={
+              <ProtectedRoute requiredRole="agent">
+                <SettingsPage role="agent" />
+              </ProtectedRoute>
+            } />
             
             {/* Merchant Routes */}
             <Route path="/merchant" element={

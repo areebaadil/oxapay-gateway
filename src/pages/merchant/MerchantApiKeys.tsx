@@ -39,7 +39,7 @@ export default function MerchantApiKeys() {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>CryptoGate API Documentation</title>
+  <title>Roxpay API Documentation</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #333; }
     h1 { color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }

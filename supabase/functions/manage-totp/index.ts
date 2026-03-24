@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function jsonResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,13 +24,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify caller is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(
@@ -31,17 +34,28 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await req.json();
+    const { action, code } = body;
+
+    // ACTION: status - Check if user has TOTP enabled
+    if (action === "status") {
+      const { data: existing } = await supabase
+        .from("user_totp")
+        .select("is_enabled")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      return jsonResponse({
+        has_totp: !!existing,
+        is_enabled: existing?.is_enabled || false,
       });
     }
 
-    const { action } = await req.json();
-
     // ACTION: setup - Generate TOTP secret and return QR URI
     if (action === "setup") {
-      // Check if already has TOTP enabled
       const { data: existing } = await supabase
         .from("user_totp")
         .select("is_enabled")
@@ -49,13 +63,9 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing?.is_enabled) {
-        return new Response(JSON.stringify({ error: "TOTP already enabled" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "TOTP already enabled" }, 400);
       }
 
-      // Generate new secret
       const secret = new Secret({ size: 20 });
       const totp = new TOTP({
         issuer: "Roxpay",
@@ -66,7 +76,6 @@ serve(async (req) => {
         secret,
       });
 
-      // Store secret (upsert - replace if exists but not enabled)
       await supabase
         .from("user_totp")
         .upsert({
@@ -75,35 +84,92 @@ serve(async (req) => {
           is_enabled: false,
         }, { onConflict: "user_id" });
 
-      const otpauthUri = totp.toString();
-
-      return new Response(JSON.stringify({
+      return jsonResponse({
         secret: secret.base32,
-        uri: otpauthUri,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        uri: totp.toString(),
       });
     }
 
     // ACTION: verify-setup - Verify code and enable TOTP
     if (action === "verify-setup") {
-      const { code } = await req.json().catch(() => ({}));
-      // Re-parse since we already consumed body above, use the original parse
-      // Actually we already parsed action, let's get code from the same parse
+      if (!code) {
+        return jsonResponse({ error: "Code is required" }, 400);
+      }
+
+      const { data: totpRecord } = await supabase
+        .from("user_totp")
+        .select("totp_secret, is_enabled")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!totpRecord) {
+        return jsonResponse({ error: "TOTP not set up. Call setup first." }, 400);
+      }
+
+      if (totpRecord.is_enabled) {
+        return jsonResponse({ error: "TOTP already enabled" }, 400);
+      }
+
+      const totp = new TOTP({
+        issuer: "Roxpay",
+        label: user.email || "User",
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret: Secret.fromBase32(totpRecord.totp_secret),
+      });
+
+      const delta = totp.validate({ token: code, window: 1 });
+
+      if (delta === null) {
+        return jsonResponse({ error: "Invalid code. Please try again." }, 400);
+      }
+
+      await supabase
+        .from("user_totp")
+        .update({ is_enabled: true })
+        .eq("user_id", user.id);
+
+      return jsonResponse({ success: true, message: "TOTP enabled successfully" });
     }
 
-    // Re-parse body for all actions
-    // Fix: we need to get all params from one parse. Let me restructure.
+    // ACTION: verify - Verify TOTP code during login
+    if (action === "verify") {
+      if (!code) {
+        return jsonResponse({ error: "Code is required" }, 400);
+      }
 
-    return new Response(JSON.stringify({ error: "Invalid action" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      const { data: totpRecord } = await supabase
+        .from("user_totp")
+        .select("totp_secret, is_enabled")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!totpRecord || !totpRecord.is_enabled) {
+        return jsonResponse({ error: "TOTP not enabled for this user" }, 400);
+      }
+
+      const totp = new TOTP({
+        issuer: "Roxpay",
+        label: user.email || "User",
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret: Secret.fromBase32(totpRecord.totp_secret),
+      });
+
+      const delta = totp.validate({ token: code, window: 1 });
+
+      if (delta === null) {
+        return jsonResponse({ error: "Invalid authentication code" }, 400);
+      }
+
+      return jsonResponse({ success: true, verified: true });
+    }
+
+    return jsonResponse({ error: "Invalid action" }, 400);
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 });

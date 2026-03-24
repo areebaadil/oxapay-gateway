@@ -25,6 +25,7 @@ import AgentTransactions from "./pages/agent/AgentTransactions";
 import AgentSettlements from "./pages/agent/AgentSettlements";
 import AgentMerchants from "./pages/agent/AgentMerchants";
 import DepositPage from "./pages/deposit/DepositPage";
+import SettingsPage from "./pages/shared/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,11 @@ const App = () => (
                 <AgentSettlements />
               </ProtectedRoute>
             } />
+            <Route path="/agent/settings" element={
+              <ProtectedRoute requiredRole="agent">
+                <SettingsPage role="agent" />
+              </ProtectedRoute>
+            } />
             
             {/* Merchant Routes */}
             <Route path="/merchant" element={
@@ -126,6 +132,11 @@ const App = () => (
             <Route path="/merchant/api" element={
               <ProtectedRoute requiredRole="merchant">
                 <MerchantApiKeys />
+              </ProtectedRoute>
+            } />
+            <Route path="/merchant/settings" element={
+              <ProtectedRoute requiredRole="merchant">
+                <SettingsPage role="merchant" />
               </ProtectedRoute>
             } />
             

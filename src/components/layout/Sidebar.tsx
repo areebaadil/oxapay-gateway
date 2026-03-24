@@ -37,6 +37,7 @@ const agentLinks = [
   { to: '/agent/merchants', icon: Users, label: 'Merchants' },
   { to: '/agent/transactions', icon: ArrowDownToLine, label: 'Transactions' },
   { to: '/agent/settlements', icon: Wallet, label: 'Settlements' },
+  { to: '/agent/settings', icon: Settings, label: 'Settings' },
 ];
 
 const merchantLinks = [
@@ -45,6 +46,7 @@ const merchantLinks = [
   { to: '/merchant/ledger', icon: FileText, label: 'Ledger' },
   { to: '/merchant/settlements', icon: Wallet, label: 'Settlements' },
   { to: '/merchant/api', icon: CreditCard, label: 'API Keys' },
+  { to: '/merchant/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function Sidebar({ role }: SidebarProps) {

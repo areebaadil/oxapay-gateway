@@ -6,6 +6,7 @@ import { useLedgerBalance } from '@/hooks/useLedger';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,22 +30,29 @@ import {
   CheckCircle, 
   XCircle,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { CoinType, SUPPORTED_COIN } from '@/types';
 
 export default function MerchantSettlements() {
-  const { merchantId } = useAuth();
+  const { merchantId, user } = useAuth();
   const { data: settlements, isLoading } = useSettlements();
   const { data: exchangeRates } = useExchangeRates();
   const balances = useLedgerBalance(merchantId || undefined);
   const createSettlement = useCreateSettlement();
+  const { toast } = useToast();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Fetch merchant's withdrawal fee
   const { data: merchant } = useQuery({
@@ -78,21 +86,44 @@ export default function MerchantSettlements() {
   const totalFees = amount ? feeAmount + serviceFee : 0;
   const netAmount = amount ? Number(amount) - totalFees : 0;
 
-  const handleSubmit = () => {
-    if (!amount || !walletAddress) return;
+  const handleSubmit = async () => {
+    if (!amount || !walletAddress || !password) return;
     
-    createSettlement.mutate({
-      coin: SUPPORTED_COIN,
-      amount: Number(amount),
-      usd_value_at_request: Number(amount) * (ratesMap[SUPPORTED_COIN] || 1),
-      wallet_address: walletAddress,
-    }, {
-      onSuccess: () => {
-        setIsDialogOpen(false);
-        setAmount('');
-        setWalletAddress('');
+    setIsVerifying(true);
+    try {
+      // Verify password before submitting
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: password,
+      });
+
+      if (signInError) {
+        toast({ title: 'Error', description: 'Incorrect password. Please try again.', variant: 'destructive' });
+        setIsVerifying(false);
+        return;
       }
-    });
+
+      createSettlement.mutate({
+        coin: SUPPORTED_COIN,
+        amount: Number(amount),
+        usd_value_at_request: Number(amount) * (ratesMap[SUPPORTED_COIN] || 1),
+        wallet_address: walletAddress,
+      }, {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+          setAmount('');
+          setWalletAddress('');
+          setPassword('');
+          setIsVerifying(false);
+        },
+        onError: () => {
+          setIsVerifying(false);
+        }
+      });
+    } catch {
+      toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' });
+      setIsVerifying(false);
+    }
   };
 
   const pendingSettlements = settlements?.filter(s => s.status === 'PENDING') || [];
@@ -226,10 +257,38 @@ export default function MerchantSettlements() {
                     Make sure to use a valid TRC-20 compatible address
                   </p>
                 </div>
+
+                {/* Password Verification */}
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    Verify Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your account password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your password to confirm this withdrawal
+                  </p>
+                </div>
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => { setIsDialogOpen(false); setPassword(''); }}>
                   Cancel
                 </Button>
                 <Button 
@@ -237,15 +296,17 @@ export default function MerchantSettlements() {
                   disabled={
                     !amount || 
                     !walletAddress || 
+                    !password ||
                     Number(amount) <= 0 || 
                     Number(amount) > usdtBalance ||
-                    createSettlement.isPending
+                    createSettlement.isPending ||
+                    isVerifying
                   }
                 >
-                  {createSettlement.isPending ? (
+                  {(createSettlement.isPending || isVerifying) ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
+                      {isVerifying ? 'Verifying...' : 'Submitting...'}
                     </>
                   ) : (
                     'Submit Request'

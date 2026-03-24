@@ -131,7 +131,7 @@ export default function TotpSetupPage() {
             <div className="space-y-6">
               {/* QR Code */}
               <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-xl">
+                <div className="bg-background p-4 rounded-xl border border-border">
                   <QRCodeSVG value={uri} size={200} />
                 </div>
               </div>

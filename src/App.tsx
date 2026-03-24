@@ -25,6 +25,7 @@ import AgentTransactions from "./pages/agent/AgentTransactions";
 import AgentSettlements from "./pages/agent/AgentSettlements";
 import AgentMerchants from "./pages/agent/AgentMerchants";
 import DepositPage from "./pages/deposit/DepositPage";
+import SettingsPage from "./pages/shared/SettingsPage";
 
 const queryClient = new QueryClient();
 

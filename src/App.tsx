@@ -134,6 +134,11 @@ const App = () => (
                 <MerchantApiKeys />
               </ProtectedRoute>
             } />
+            <Route path="/merchant/settings" element={
+              <ProtectedRoute requiredRole="merchant">
+                <SettingsPage role="merchant" />
+              </ProtectedRoute>
+            } />
             
             {/* Hosted Deposit Page (public) */}
             <Route path="/deposit/:intentId" element={<DepositPage />} />

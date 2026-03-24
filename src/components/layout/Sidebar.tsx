@@ -67,7 +67,7 @@ export function Sidebar({ role }: SidebarProps) {
             <Shield className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <span className="text-lg font-bold gradient-text">CryptoGate</span>
+            <span className="text-lg font-bold gradient-text">Roxpay</span>
             <span className="ml-1 text-xs text-muted-foreground">
               {role === 'admin' ? 'Admin' : role === 'agent' ? 'Agent' : 'Portal'}
             </span>

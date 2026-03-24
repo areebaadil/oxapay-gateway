@@ -1,4 +1,4 @@
-// Core Types for CryptoGate Payment Gateway
+// Core Types for Roxpay Payment Gateway
 
 export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED' | 'SETTLED';
 

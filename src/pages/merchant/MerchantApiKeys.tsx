@@ -59,7 +59,7 @@ export default function MerchantApiKeys() {
   </style>
 </head>
 <body>
-  <h1>🔐 CryptoGate Payment Gateway API</h1>
+  <h1>🔐 Roxpay Payment Gateway API</h1>
   <p><strong>Version:</strong> 1.0 | <strong>Base URL:</strong> <code>${BASE_URL}</code></p>
   
   <h2>🔑 Authentication</h2>

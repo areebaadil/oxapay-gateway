@@ -128,7 +128,7 @@ export default function Login() {
               <Shield className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold gradient-text">CryptoGate</h1>
+              <h1 className="text-2xl font-bold gradient-text">Roxpay</h1>
               <p className="text-xs text-muted-foreground">Payment Gateway</p>
             </div>
           </div>

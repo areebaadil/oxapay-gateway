@@ -617,7 +617,7 @@ export default function DepositPage() {
       <footer className="border-t border-border py-4">
         <div className="container max-w-2xl mx-auto px-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Shield className="h-4 w-4" />
-          <span>Secured by CryptoGate</span>
+          <span>Secured by Roxpay</span>
         </div>
       </footer>
     </div>

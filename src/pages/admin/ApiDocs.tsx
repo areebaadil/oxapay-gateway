@@ -352,7 +352,7 @@ export default function ApiDocs() {
             Merchant API Documentation
           </h1>
           <p className="text-muted-foreground mt-1">
-            Complete reference for integrating with the CryptoGate payment gateway
+            Complete reference for integrating with the Roxpay payment gateway
           </p>
         </div>
 

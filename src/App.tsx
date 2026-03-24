@@ -26,6 +26,7 @@ import AgentSettlements from "./pages/agent/AgentSettlements";
 import AgentMerchants from "./pages/agent/AgentMerchants";
 import DepositPage from "./pages/deposit/DepositPage";
 import SettingsPage from "./pages/shared/SettingsPage";
+import TotpSetupPage from "./pages/auth/TotpSetupPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/totp-setup" element={<TotpSetupPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={

@@ -182,7 +182,7 @@ export default function TotpSetupPage() {
 
           {step === 'done' && (
             <div className="flex flex-col items-center gap-4 py-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <CheckCircle2 className="h-16 w-16 text-primary" />
               <p className="text-muted-foreground text-sm">Redirecting to your dashboard...</p>
             </div>
           )}

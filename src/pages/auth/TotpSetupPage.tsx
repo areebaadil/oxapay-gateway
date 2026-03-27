@@ -61,8 +61,10 @@ export default function TotpSetupPage() {
 
     setIsVerifying(true);
     try {
+      const { data: { session: verifySession } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke('manage-totp', {
         body: { action: 'verify-setup', code },
+        headers: { Authorization: `Bearer ${verifySession?.access_token}` },
       });
 
       if (error) throw error;

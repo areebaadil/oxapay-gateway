@@ -86,8 +86,10 @@ export default function Login() {
       }
 
       // Verify TOTP via edge function
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('manage-totp', {
         body: { action: 'verify', code: totpCode },
+        headers: { Authorization: `Bearer ${currentSession?.access_token}` },
       });
 
       if (verifyError || verifyData?.error) {

@@ -55,14 +55,14 @@ export default function TotpSetupPage() {
 
     setIsVerifying(true);
     try {
-      const { data: { session: verifySession } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('manage-totp', {
-        body: { action: 'verify-setup', code },
-        headers: { Authorization: `Bearer ${verifySession?.access_token}` },
-      });
+      const { data, error } = await callManageTotp('verify-setup', code);
 
-      if (error) throw error;
-      if (data.error) {
+      if (error) {
+        toast({ title: 'Invalid Code', description: error.error || 'Verification failed', variant: 'destructive' });
+        setIsVerifying(false);
+        return;
+      }
+      if (data?.error) {
         toast({ title: 'Invalid Code', description: data.error, variant: 'destructive' });
         setIsVerifying(false);
         return;

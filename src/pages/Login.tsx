@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { callManageTotp } from '@/lib/totp-api';
 
+type LoginStep = 'credentials' | 'totp';
+
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, user, role, isLoading: authLoading, totpEnabled, totpVerified, setTotpVerified } = useAuth();
@@ -18,24 +20,19 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [totpCode, setTotpCode] = useState('');
+  const [step, setStep] = useState<LoginStep>('credentials');
 
-  // Redirect if fully authenticated (signed in + TOTP verified or no TOTP)
+  // Redirect if fully authenticated
   useEffect(() => {
     if (!user || !role) return;
-
-    // TOTP status still loading
     if (totpEnabled === null) return;
-
-    // TOTP enabled but not verified yet — don't redirect
     if (totpEnabled && !totpVerified) return;
 
-    // TOTP not enabled — need to set up first
     if (!totpEnabled) {
       navigate('/totp-setup');
       return;
     }
 
-    // Fully authenticated
     if (role === 'admin') navigate('/admin');
     else if (role === 'agent') navigate('/agent');
     else if (role === 'merchant') navigate('/merchant');
@@ -44,49 +41,51 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      toast({
-        title: 'Login failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
 
-    // After sign in, check TOTP status
-    // We need to wait for the auth context to update, but we can also check directly
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Check TOTP status
-    const { data: totpData } = await supabase
-      .from('user_totp')
-      .select('is_enabled')
-      .eq('user_id', session.user.id)
-      .maybeSingle();
-
-    const hasTotpEnabled = totpData?.is_enabled || false;
-
-    if (hasTotpEnabled) {
-      // TOTP is enabled — verify the code
-      if (!totpCode) {
-        toast({
-          title: 'Authentication code required',
-          description: 'Please enter your 6-digit authenticator code.',
-          variant: 'destructive',
-        });
+    if (step === 'credentials') {
+      // Step 1: Sign in with email/password
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
         setIsLoading(false);
         return;
       }
 
-      // Verify TOTP via edge function
+      // Check if user has TOTP enabled
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: totpData } = await supabase
+        .from('user_totp')
+        .select('is_enabled')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      const hasTotpEnabled = totpData?.is_enabled || false;
+
+      if (hasTotpEnabled) {
+        // Show TOTP input step
+        setStep('totp');
+        setIsLoading(false);
+        return;
+      }
+
+      // No TOTP — useEffect will redirect to /totp-setup
+      setIsLoading(false);
+      return;
+    }
+
+    if (step === 'totp') {
+      // Step 2: Verify TOTP code
+      if (!totpCode || totpCode.length !== 6) {
+        toast({ title: 'Invalid code', description: 'Please enter a valid 6-digit code.', variant: 'destructive' });
+        setIsLoading(false);
+        return;
+      }
+
       const { data: verifyData, error: verifyError } = await callManageTotp('verify', totpCode);
 
       if (verifyError || verifyData?.error) {
@@ -95,17 +94,19 @@ export default function Login() {
           description: verifyError?.error || verifyData?.error || 'Authentication code is incorrect.',
           variant: 'destructive',
         });
-        // Sign out since code was wrong
-        await supabase.auth.signOut();
         setIsLoading(false);
         return;
       }
 
       setTotpVerified(true);
+      setIsLoading(false);
     }
-    // If no TOTP, the useEffect will redirect to /totp-setup
+  };
 
-    setIsLoading(false);
+  const handleBackToCredentials = async () => {
+    await supabase.auth.signOut();
+    setStep('credentials');
+    setTotpCode('');
   };
 
   if (authLoading) {
@@ -187,72 +188,79 @@ export default function Login() {
           </div>
           
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {step === 'credentials' ? 'Welcome back' : 'Two-Factor Authentication'}
+            </h2>
             <p className="text-muted-foreground">
-              Sign in to access your dashboard
+              {step === 'credentials'
+                ? 'Sign in to access your dashboard'
+                : 'Enter the 6-digit code from your authenticator app'}
             </p>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="pl-10 pr-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
+            {step === 'credentials' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input 
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      className="pl-10"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input 
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="pl-10 pr-10"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
-            {/* TOTP Code - Optional field */}
-            <div className="space-y-2">
-              <Label htmlFor="totp-code">
-                Authenticator Code
-                <span className="text-xs text-muted-foreground ml-2">(leave empty if not set up)</span>
-              </Label>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  id="totp-code"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
-                  className="pl-10 text-center tracking-[0.3em] font-mono"
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                />
+            {step === 'totp' && (
+              <div className="space-y-2">
+                <Label htmlFor="totp-code">Authenticator Code</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    id="totp-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    className="pl-10 text-center tracking-[0.3em] font-mono"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    autoFocus
+                  />
+                </div>
               </div>
-            </div>
+            )}
             
             <Button 
               type="submit" 
@@ -261,13 +269,26 @@ export default function Login() {
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
+              ) : step === 'credentials' ? (
                 <>
                   Sign In
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
+              ) : (
+                'Verify & Sign In'
               )}
             </Button>
+
+            {step === 'totp' && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={handleBackToCredentials}
+              >
+                Back to Sign In
+              </Button>
+            )}
           </form>
           
           <p className="mt-8 text-center text-sm text-muted-foreground">

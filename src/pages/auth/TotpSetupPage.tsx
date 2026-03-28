@@ -28,21 +28,15 @@ export default function TotpSetupPage() {
 
   const initSetup = async () => {
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('manage-totp', {
-        body: { action: 'setup' },
-        headers: { Authorization: `Bearer ${currentSession?.access_token}` },
-      });
+      const { data, error } = await callManageTotp('setup');
 
-      if (error) throw error;
-      if (data.error) {
-        if (data.error === 'TOTP already enabled') {
-          // Already set up, redirect
+      if (error) {
+        if (error.error === 'TOTP already enabled') {
           setTotpVerified(true);
           redirectToDashboard();
           return;
         }
-        throw new Error(data.error);
+        throw new Error(error.error || 'Setup failed');
       }
 
       setSecret(data.secret);

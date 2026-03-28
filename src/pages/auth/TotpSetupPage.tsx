@@ -7,14 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Loader2, Copy, CheckCircle2 } from 'lucide-react';
+import { Shield, Loader2, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function TotpSetupPage() {
   const { user, role, session, setTotpVerified } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState<'loading' | 'qr' | 'done'>('loading');
+  const [step, setStep] = useState<'loading' | 'qr' | 'done' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState('');
   const [secret, setSecret] = useState('');
   const [uri, setUri] = useState('');
   const [code, setCode] = useState('');
@@ -39,10 +40,16 @@ export default function TotpSetupPage() {
         throw new Error(error.error || 'Setup failed');
       }
 
+      if (!data?.secret || !data?.uri) {
+        throw new Error('Invalid response from server');
+      }
+
       setSecret(data.secret);
       setUri(data.uri);
       setStep('qr');
     } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to initialize TOTP setup');
+      setStep('error');
       toast({ title: 'Error', description: err.message || 'Failed to initialize TOTP setup', variant: 'destructive' });
     }
   };
@@ -106,6 +113,27 @@ export default function TotpSetupPage() {
     );
   }
 
+  if (step === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md border-border/50">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <AlertCircle className="h-14 w-14 text-destructive" />
+            </div>
+            <CardTitle className="text-xl">Setup Failed</CardTitle>
+            <CardDescription>{errorMessage}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => { setStep('loading'); initSetup(); }} className="w-full">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border/50">
@@ -127,14 +155,12 @@ export default function TotpSetupPage() {
         <CardContent>
           {step === 'qr' && (
             <div className="space-y-6">
-              {/* QR Code */}
               <div className="flex justify-center">
                 <div className="p-4 rounded-xl border border-border" style={{ backgroundColor: '#ffffff' }}>
                   <QRCodeSVG value={uri} size={200} />
                 </div>
               </div>
 
-              {/* Manual secret */}
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Or enter this key manually:</Label>
                 <div className="flex items-center gap-2">
@@ -147,7 +173,6 @@ export default function TotpSetupPage() {
                 </div>
               </div>
 
-              {/* Verification code */}
               <div className="space-y-2">
                 <Label>Enter the 6-digit code from your app</Label>
                 <Input

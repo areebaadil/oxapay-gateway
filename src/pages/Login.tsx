@@ -7,6 +7,7 @@ import { Shield, ArrowRight, Lock, Mail, Loader2, Eye, EyeOff, KeyRound } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callManageTotp } from '@/lib/totp-api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -86,16 +87,12 @@ export default function Login() {
       }
 
       // Verify TOTP via edge function
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('manage-totp', {
-        body: { action: 'verify', code: totpCode },
-        headers: { Authorization: `Bearer ${currentSession?.access_token}` },
-      });
+      const { data: verifyData, error: verifyError } = await callManageTotp('verify', totpCode);
 
       if (verifyError || verifyData?.error) {
         toast({
           title: 'Invalid code',
-          description: verifyData?.error || 'Authentication code is incorrect.',
+          description: verifyError?.error || verifyData?.error || 'Authentication code is incorrect.',
           variant: 'destructive',
         });
         // Sign out since code was wrong

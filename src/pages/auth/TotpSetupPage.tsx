@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { callManageTotp } from '@/lib/totp-api';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,21 +28,15 @@ export default function TotpSetupPage() {
 
   const initSetup = async () => {
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('manage-totp', {
-        body: { action: 'setup' },
-        headers: { Authorization: `Bearer ${currentSession?.access_token}` },
-      });
+      const { data, error } = await callManageTotp('setup');
 
-      if (error) throw error;
-      if (data.error) {
-        if (data.error === 'TOTP already enabled') {
-          // Already set up, redirect
+      if (error) {
+        if (error.error === 'TOTP already enabled') {
           setTotpVerified(true);
           redirectToDashboard();
           return;
         }
-        throw new Error(data.error);
+        throw new Error(error.error || 'Setup failed');
       }
 
       setSecret(data.secret);
@@ -61,14 +55,14 @@ export default function TotpSetupPage() {
 
     setIsVerifying(true);
     try {
-      const { data: { session: verifySession } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke('manage-totp', {
-        body: { action: 'verify-setup', code },
-        headers: { Authorization: `Bearer ${verifySession?.access_token}` },
-      });
+      const { data, error } = await callManageTotp('verify-setup', code);
 
-      if (error) throw error;
-      if (data.error) {
+      if (error) {
+        toast({ title: 'Invalid Code', description: error.error || 'Verification failed', variant: 'destructive' });
+        setIsVerifying(false);
+        return;
+      }
+      if (data?.error) {
         toast({ title: 'Invalid Code', description: data.error, variant: 'destructive' });
         setIsVerifying(false);
         return;

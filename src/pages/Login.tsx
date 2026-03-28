@@ -7,6 +7,7 @@ import { Shield, ArrowRight, Lock, Mail, Loader2, Eye, EyeOff, KeyRound } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { callManageTotp } from '@/lib/totp-api';
 
 export default function Login() {
   const navigate = useNavigate();
